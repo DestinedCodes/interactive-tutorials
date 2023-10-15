@@ -34,13 +34,8 @@ class TocTreeprocessor(markdown.treeprocessors.Treeprocessor):
         list_stack=[div]
         header_rgx = re.compile("[Hh][123456]")
 
-        # Get a list of id attributes
-        used_ids = []
-        for c in doc.getiterator():
-            if "id" in c.attrib:
-                used_ids.append(c.attrib["id"])
-
-        for (p, c) in self.iterparent(doc):
+        used_ids = [c.attrib["id"] for c in doc.getiterator() if "id" in c.attrib]
+        for p, c in self.iterparent(doc):
             if not c.text:
                 continue
 
@@ -56,10 +51,10 @@ class TocTreeprocessor(markdown.treeprocessors.Treeprocessor):
                     if p[i] == c:
                         p[i] = div
                         break
-                    
+
             if header_rgx.match(c.tag):
                 tag_level = int(c.tag[-1])
-                
+
                 while tag_level < level:
                     list_stack.pop()
                     level -= 1
@@ -73,8 +68,8 @@ class TocTreeprocessor(markdown.treeprocessors.Treeprocessor):
                     list_stack.append(newlist)
                     level += 1
 
-                # Do not override pre-existing ids 
-                if not "id" in c.attrib:
+                # Do not override pre-existing ids
+                if "id" not in c.attrib:
                     id = self.config["slugify"][0](c.text)
                     if id in used_ids:
                         ctr = 1
@@ -90,12 +85,12 @@ class TocTreeprocessor(markdown.treeprocessors.Treeprocessor):
                 last_li = etree.Element("li")
                 link = etree.SubElement(last_li, "a")
                 link.text = c.text
-                link.attrib["href"] = '#' + id
+                link.attrib["href"] = f'#{id}'
 
                 if int(self.config["anchorlink"][0]):
                     anchor = etree.SubElement(c, "a")
                     anchor.text = c.text
-                    anchor.attrib["href"] = "#" + id
+                    anchor.attrib["href"] = f"#{id}"
                     anchor.attrib["class"] = "toclink"
                     c.text = ""
 

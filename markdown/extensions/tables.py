@@ -32,10 +32,7 @@ class TableProcessor(markdown.blockprocessors.BlockProcessor):
         block = blocks.pop(0).split('\n')
         header = block[:2]
         rows = block[2:]
-        # Get format type (bordered by pipes or not)
-        border = False
-        if header[0].startswith('|'):
-            border = True
+        border = bool(header[0].startswith('|'))
         # Get alignment of columns
         align = []
         for c in self._split_row(header[1], border):
@@ -58,9 +55,7 @@ class TableProcessor(markdown.blockprocessors.BlockProcessor):
     def _build_row(self, row, parent, align, border):
         """ Given a row of text, build table cells. """
         tr = etree.SubElement(parent, 'tr')
-        tag = 'td'
-        if parent.tag == 'thead':
-            tag = 'th'
+        tag = 'th' if parent.tag == 'thead' else 'td'
         cells = self._split_row(row, border)
         # We use align here rather than cells to ensure every row 
         # contains the same number of columns.

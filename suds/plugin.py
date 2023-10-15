@@ -195,16 +195,11 @@ class PluginContainer:
         self.plugins = plugins
 
     def __getattr__(self, name):
-        domain = self.domains.get(name)
-        if domain:
-            plugins = []
-            ctx, pclass = domain
-            for p in self.plugins:
-                if isinstance(p, pclass):
-                    plugins.append(p)
-            return PluginDomain(ctx, plugins)
-        else:
-            raise Exception('plugin domain (%s), invalid' % name)
+        if not (domain := self.domains.get(name)):
+            raise Exception(f'plugin domain ({name}), invalid')
+        ctx, pclass = domain
+        plugins = [p for p in self.plugins if isinstance(p, pclass)]
+        return PluginDomain(ctx, plugins)
 
 
 class PluginDomain:

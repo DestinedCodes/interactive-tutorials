@@ -116,7 +116,7 @@ The pattern classes
 class Pattern:
     """Base class that inline patterns subclass. """
 
-    def __init__ (self, pattern, markdown_instance=None):
+    def __init__(self, pattern, markdown_instance=None):
         """
         Create an instant of an inline pattern.
 
@@ -126,7 +126,7 @@ class Pattern:
 
         """
         self.pattern = pattern
-        self.compiled_re = re.compile("^(.*?)%s(.*?)$" % pattern, re.DOTALL)
+        self.compiled_re = re.compile(f"^(.*?){pattern}(.*?)$", re.DOTALL)
 
         # Api for Markdown to pass safe_mode into instance
         self.safe_mode = False
@@ -159,9 +159,7 @@ class SimpleTextPattern (Pattern):
     """ Return a simple text of group(2) of a Pattern. """
     def handleMatch(self, m):
         text = m.group(2)
-        if text == markdown.INLINE_PLACEHOLDER_PREFIX:
-            return None
-        return text
+        return None if text == markdown.INLINE_PLACEHOLDER_PREFIX else text
 
 class SimpleTagPattern (Pattern):
     """
@@ -213,11 +211,10 @@ class DoubleTagPattern (SimpleTagPattern):
 
 class HtmlPattern (Pattern):
     """ Store raw inline html and return a placeholder. """
-    def handleMatch (self, m):
+    def handleMatch(self, m):
         rawhtml = m.group(2)
         inline = True
-        place_holder = self.markdown.htmlStash.store(rawhtml)
-        return place_holder
+        return self.markdown.htmlStash.store(rawhtml)
 
 
 class LinkPattern (Pattern):
@@ -226,9 +223,7 @@ class LinkPattern (Pattern):
         el = markdown.etree.Element("a")
         el.text = m.group(2)
         title = m.group(11)
-        href = m.group(9)
-
-        if href:
+        if href := m.group(9):
             if href[0] == "<":
                 href = href[1:-1]
             el.set("href", self.sanitize_url(href.strip()))
@@ -267,10 +262,7 @@ class LinkPattern (Pattern):
             if ":" in part:
                 safe_url = False
 
-        if self.markdown.safeMode and not safe_url:
-            return ''
-        else:
-            return urlunparse(url)
+        return '' if self.markdown.safeMode and not safe_url else urlunparse(url)
 
 class ImagePattern(LinkPattern):
     """ Return a img element from the given match. """
@@ -298,14 +290,8 @@ class ImagePattern(LinkPattern):
 class ReferencePattern(LinkPattern):
     """ Match to a stored reference and return link element. """
     def handleMatch(self, m):
-        if m.group(9):
-            id = m.group(9).lower()
-        else:
-            # if we got something like "[Google][]"
-            # we'll use "google" as the id
-            id = m.group(2).lower()
-
-        if not id in self.markdown.references: # ignore undefined refs
+        id = m.group(9).lower() if m.group(9) else m.group(2).lower()
+        if id not in self.markdown.references: # ignore undefined refs
             return None
         href, title = self.markdown.references[id]
 
@@ -356,14 +342,14 @@ class AutomailPattern (Pattern):
             """Return entity definition by code, or the code if not defined."""
             entity = html.entities.codepoint2name.get(code)
             if entity:
-                return "%s%s;" % (markdown.AMP_SUBSTITUTE, entity)
+                return f"{markdown.AMP_SUBSTITUTE}{entity};"
             else:
                 return "%s#%d;" % (markdown.AMP_SUBSTITUTE, code)
 
         letters = [codepoint2name(ord(letter)) for letter in email]
         el.text = markdown.AtomicString(''.join(letters))
 
-        mailto = "mailto:" + email
+        mailto = f"mailto:{email}"
         mailto = "".join([markdown.AMP_SUBSTITUTE + '#%d;' %
                           ord(letter) for letter in mailto])
         el.set('href', mailto)

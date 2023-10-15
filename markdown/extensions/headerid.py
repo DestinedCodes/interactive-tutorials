@@ -94,8 +94,7 @@ class HeaderIdProcessor(markdown.blockprocessors.BlockProcessor):
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
-        m = self.RE.search(block)
-        if m:
+        if m := self.RE.search(block):
             before = block[:m.start()] # All lines before header
             after = block[m.end():]    # All lines after header
             if before:
@@ -106,8 +105,7 @@ class HeaderIdProcessor(markdown.blockprocessors.BlockProcessor):
             # Create header using named groups from RE
             start_level, force_id = self._get_meta()
             level = len(m.group('level')) + start_level
-            if level > 6: 
-                level = 6
+            level = min(level, 6)
             h = markdown.etree.SubElement(parent, 'h%d' % level)
             h.text = m.group('header').strip()
             if m.group('id'):
@@ -135,17 +133,16 @@ class HeaderIdProcessor(markdown.blockprocessors.BlockProcessor):
     def _str2bool(self, s, default=False):
         """ Convert a string to a booleen value. """
         s = str(s)
-        if s.lower() in ['0', 'f', 'false', 'off', 'no', 'n']:
+        if s.lower() in {'0', 'f', 'false', 'off', 'no', 'n'}:
             return False
-        elif s.lower() in ['1', 't', 'true', 'on', 'yes', 'y']:
+        elif s.lower() in {'1', 't', 'true', 'on', 'yes', 'y'}:
             return True
         return default
 
     def _unique_id(self, id):
         """ Ensure ID is unique. Append '_1', '_2'... if not """
         while id in self.IDs:
-            m = IDCOUNT_RE.match(id)
-            if m:
+            if m := IDCOUNT_RE.match(id):
                 id = '%s_%d'% (m.group(1), int(m.group(2))+1)
             else:
                 id = '%s_%d'% (id, 1)

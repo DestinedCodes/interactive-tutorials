@@ -276,7 +276,7 @@ class Definitions(WObject):
         return state
 
     def __repr__(self):
-        return 'Definitions (id=%s)' % self.id
+        return f'Definitions (id={self.id})'
 
 
 class Import(WObject):
@@ -318,7 +318,7 @@ class Import(WObject):
         if d.root.match(Schema.Tag, Namespace.xsdns):
             self.import_schema(definitions, d)
             return
-        raise Exception('document at "%s" is unknown' % url)
+        raise Exception(f'document at "{url}" is unknown')
 
     def import_definitions(self, definitions, d):
         """ import/merge wsdl definitions """
@@ -409,10 +409,7 @@ class Part(NamedObject):
     def __getref(self, a, tns):
         """ Get the qualified value of attribute named 'a'."""
         s = self.root.get(a)
-        if s is None:
-            return s
-        else:
-            return qualify(s, self.root, tns)
+        return s if s is None else qualify(s, self.root, tns)
 
 
 class Message(NamedObject):
@@ -460,15 +457,9 @@ class PortType(NamedObject):
             op.name = c.get('name')
             op.tns = definitions.tns
             input = c.getChild('input')
-            if input is None:
-                op.input = None
-            else:
-                op.input = input.get('message')
+            op.input = None if input is None else input.get('message')
             output = c.getChild('output')
-            if output is None:
-                op.output = None
-            else:
-                op.output = output.get('message')
+            op.output = None if output is None else output.get('message')
             faults = []
             for fault in c.getChildren('fault'):
                 f = Facade('Fault')
@@ -491,7 +482,7 @@ class PortType(NamedObject):
                 qref = qualify(op.input, self.root, definitions.tns)
                 msg = definitions.messages.get(qref)
                 if msg is None:
-                    raise Exception("msg '%s', not-found" % op.input)
+                    raise Exception(f"msg '{op.input}', not-found")
                 else:
                     op.input = msg
             if op.output is None:
@@ -500,14 +491,14 @@ class PortType(NamedObject):
                 qref = qualify(op.output, self.root, definitions.tns)
                 msg = definitions.messages.get(qref)
                 if msg is None:
-                    raise Exception("msg '%s', not-found" % op.output)
+                    raise Exception(f"msg '{op.output}', not-found")
                 else:
                     op.output = msg
             for f in op.faults:
                 qref = qualify(f.message, self.root, definitions.tns)
                 msg = definitions.messages.get(qref)
                 if msg is None:
-                    raise Exception("msg '%s', not-found" % f.message)
+                    raise Exception(f"msg '{f.message}', not-found")
                 f.message = msg
 
     def operation(self, name):
@@ -615,10 +606,7 @@ class Binding(NamedObject):
             body.parts = ()
             return
         parts = root.get('parts')
-        if parts is None:
-            body.parts = ()
-        else:
-            body.parts = re.split(r'[\s,]', parts)
+        body.parts = () if parts is None else re.split(r'[\s,]', parts)
         body.use = root.get('use', default='literal')
         ns = root.get('namespace')
         if ns is None:
@@ -670,7 +658,7 @@ class Binding(NamedObject):
         ref = qualify(self.type, self.root, definitions.tns)
         port_type = definitions.port_types.get(ref)
         if port_type is None:
-            raise Exception("portType '%s', not-found" % self.type)
+            raise Exception(f"portType '{self.type}', not-found")
         else:
             self.type = port_type
 
@@ -685,23 +673,17 @@ class Binding(NamedObject):
         """
         ptop = self.type.operation(op.name)
         if ptop is None:
-            raise Exception("operation '%s' not defined in portType" % op.name)
+            raise Exception(f"operation '{op.name}' not defined in portType")
         soap = op.soap
         parts = soap.input.body.parts
         if len(parts):
-            pts = []
-            for p in ptop.input.parts:
-                if p.name in parts:
-                    pts.append(p)
+            pts = [p for p in ptop.input.parts if p.name in parts]
             soap.input.body.parts = pts
         else:
             soap.input.body.parts = ptop.input.parts
         parts = soap.output.body.parts
         if len(parts):
-            pts = []
-            for p in ptop.output.parts:
-                if p.name in parts:
-                    pts.append(p)
+            pts = [p for p in ptop.output.parts if p.name in parts]
             soap.output.body.parts = pts
         else:
             soap.output.body.parts = ptop.output.parts
@@ -721,14 +703,14 @@ class Binding(NamedObject):
             ref = qualify(mn, self.root, definitions.tns)
             message = definitions.messages.get(ref)
             if message is None:
-                raise Exception("message'%s', not-found" % mn)
+                raise Exception(f"message'{mn}', not-found")
             pn = header.part
             for p in message.parts:
                 if p.name == pn:
                     header.part = p
                     break
             if pn == header.part:
-                raise Exception("message '%s' has not part named '%s'" % (ref, pn))
+                raise Exception(f"message '{ref}' has not part named '{pn}'")
 
     def resolvefaults(self, definitions, op):
         """
@@ -741,7 +723,7 @@ class Binding(NamedObject):
         """
         ptop = self.type.operation(op.name)
         if ptop is None:
-            raise Exception("operation '%s' not defined in portType" % op.name)
+            raise Exception(f"operation '{op.name}' not defined in portType")
         soap = op.soap
         for fault in soap.faults:
             for f in ptop.faults:
@@ -750,7 +732,9 @@ class Binding(NamedObject):
                     continue
             if hasattr(fault, 'parts'):
                 continue
-            raise Exception("fault '%s' not defined in portType '%s'" % (fault.name, self.type.name))
+            raise Exception(
+                f"fault '{fault.name}' not defined in portType '{self.type.name}'"
+            )
 
     def operation(self, name):
         """
@@ -841,10 +825,7 @@ class Service(NamedObject):
         @return: The port object.
         @rtype: L{Port}
         """
-        for p in self.ports:
-            if p.name == name:
-                return p
-        return None
+        return next((p for p in self.ports if p.name == name), None)
 
     def setlocation(self, url, names=None):
         """
@@ -871,7 +852,7 @@ class Service(NamedObject):
             ref = qualify(p.binding, self.root, definitions.tns)
             binding = definitions.bindings.get(ref)
             if binding is None:
-                raise Exception("binding '%s', not-found" % p.binding)
+                raise Exception(f"binding '{p.binding}', not-found")
             if binding.soap is None:
                 log.debug('binding "%s" - not a soap, discarded', binding.name)
                 continue
@@ -911,7 +892,4 @@ class Factory:
         @rtype: L{WObject}
         """
         fn = cls.tags.get(root.name)
-        if fn is not None:
-            return fn(root, definitions)
-        else:
-            return None
+        return fn(root, definitions) if fn is not None else None

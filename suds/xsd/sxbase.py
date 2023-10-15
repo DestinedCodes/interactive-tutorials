@@ -113,11 +113,11 @@ class SchemaObject(object):
         @return: A list of tuples (attr, ancestry)
         @rtype: [(L{SchemaObject}, [L{SchemaObject},..]),..]
         """
-        result = []
-        for child, ancestry in self:
-            if child.isattr() and child in filter:
-                result.append((child, ancestry))
-        return result
+        return [
+            (child, ancestry)
+            for child, ancestry in self
+            if child.isattr() and child in filter
+        ]
 
     def children(self, filter=Filter()):
         """
@@ -127,11 +127,11 @@ class SchemaObject(object):
         @return: A list tuples: (child, ancestry)
         @rtype: [(L{SchemaObject}, [L{SchemaObject},..]),..]
         """
-        result = []
-        for child, ancestry in self:
-            if not child.isattr() and child in filter:
-                result.append((child, ancestry))
-        return result
+        return [
+            (child, ancestry)
+            for child, ancestry in self
+            if not child.isattr() and child in filter
+        ]
 
     def get_attribute(self, name):
         """
@@ -141,10 +141,14 @@ class SchemaObject(object):
         @return: A tuple: the requested (attribute, ancestry).
         @rtype: (L{SchemaObject}, [L{SchemaObject},..])
         """
-        for child, ancestry in self.attributes():
-            if child.name == name:
-                return (child, ancestry)
-        return (None, [])
+        return next(
+            (
+                (child, ancestry)
+                for child, ancestry in self.attributes()
+                if child.name == name
+            ),
+            (None, []),
+        )
 
     def get_child(self, name):
         """
@@ -154,10 +158,14 @@ class SchemaObject(object):
         @return: A tuple: the requested (child, ancestry).
         @rtype: (L{SchemaObject}, [L{SchemaObject},..])
         """
-        for child, ancestry in self.children():
-            if child.any() or child.name == name:
-                return (child, ancestry)
-        return (None, [])
+        return next(
+            (
+                (child, ancestry)
+                for child, ancestry in self.children()
+                if child.any() or child.name == name
+            ),
+            (None, []),
+        )
 
     def namespace(self, prefix=None):
         """
@@ -184,10 +192,7 @@ class SchemaObject(object):
         max = self.max
         if max is None:
             max = '1'
-        if max.isdigit():
-            return (int(max) > 1)
-        else:
-            return max == 'unbounded'
+        return (int(max) > 1) if max.isdigit() else max == 'unbounded'
 
     def optional(self):
         """
@@ -435,18 +440,17 @@ class SchemaObject(object):
         if history is None:
             history = []
         if self in history:
-            return '%s ...' % Repr(self)
+            return f'{Repr(self)} ...'
         history.append(self)
         tab = '%*s' % (indent * 3, '')
-        result = []
-        result.append('%s<%s' % (tab, self.id))
+        result = [f'{tab}<{self.id}']
         for n in self.description():
             if not hasattr(self, n):
                 continue
             v = getattr(self, n)
             if v is None:
                 continue
-            result.append(' %s="%s"' % (n, v))
+            result.append(f' {n}="{v}"')
         if len(self):
             result.append('>')
             for c in self.rawchildren:
@@ -454,8 +458,7 @@ class SchemaObject(object):
                 result.append(c.str(indent+1, history[:]))
                 if c.isattr():
                     result.append('@')
-            result.append('\n%s' % tab)
-            result.append('</%s>' % self.__class__.__name__)
+            result.extend(('\n%s' % tab, f'</{self.__class__.__name__}>'))
         else:
             result.append(' />')
         return ''.join(result)
@@ -475,24 +478,19 @@ class SchemaObject(object):
          return self.__repr__()
 
     def __repr__(self):
-        s = []
-        s.append('<%s' % self.id)
+        s = [f'<{self.id}']
         for n in self.description():
             if not hasattr(self, n):
                 continue
             v = getattr(self, n)
             if v is None:
                 continue
-            s.append(' %s="%s"' % (n, v))
+            s.append(f' {n}="{v}"')
         s.append(' />')
-        myrep = ''.join(s)
-        return myrep
+        return ''.join(s)
 
     def __len__(self):
-        n = 0
-        for x in self:
-            n += 1
-        return n
+        return sum(1 for _ in self)
 
     def __iter__(self):
         return Iter(self)

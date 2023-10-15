@@ -80,11 +80,9 @@ class Encoded(Typed):
         if aty is not None:
             content.aty = aty
             parts = aty.split('[')
-            ref = parts[0]
             if len(parts) == 2:
+                ref = parts[0]
                 self.applyaty(content, ref)
-            else:
-                pass  # (2) dimensional array
         return self
 
     def applyaty(self, content, xty):

@@ -136,10 +136,7 @@ class UsernameToken(Token):
         @type text: str
         """
         if text is None:
-            s = []
-            s.append(self.username)
-            s.append(self.password)
-            s.append(Token.sysdate())
+            s = [self.username, self.password, Token.sysdate()]
             m = sha256()
             m.update(':'.join(s).encode("utf-8"))
             self.nonce = m.hexdigest()
@@ -153,10 +150,7 @@ class UsernameToken(Token):
             Set as datetime.utc() when I{None}.
         @type dt: L{datetime}
         """
-        if dt is None:
-            self.created = Token.utc()
-        else:
-            self.created = dt
+        self.created = Token.utc() if dt is None else dt
 
     def xml(self):
         """

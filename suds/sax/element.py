@@ -62,7 +62,7 @@ class Element:
     }
 
     @classmethod
-    def buildPath(self, parent, path):
+    def buildPath(cls, parent, path):
         """
         Build the specifed pat as a/b/c where missing intermediate nodes are
         built automatically.
@@ -95,13 +95,12 @@ class Element:
         self.nsprefixes = {}
         self.attributes = []
         self.text = None
-        if parent is not None:
-            if isinstance(parent, Element):
-                self.parent = parent
-            else:
-                raise Exception('parent (%s) not-valid', parent.__class__.__name__)
-        else:
+        if parent is None:
             self.parent = None
+        elif isinstance(parent, Element):
+            self.parent = parent
+        else:
+            raise Exception('parent (%s) not-valid', parent.__class__.__name__)
         self.children = []
         self.applyns(ns)
 
@@ -112,7 +111,7 @@ class Element:
         @type name: basestring
         """
         if name is None:
-            raise Exception('name (%s) not-valid' % name)
+            raise Exception(f'name ({name}) not-valid')
         else:
             self.prefix, self.name = splitPrefix(name)
 
@@ -137,10 +136,7 @@ class Element:
         @return: The fully qualified name.
         @rtype: basestring
         """
-        if self.prefix is None:
-            return self.name
-        else:
-            return '%s:%s' % (self.prefix, self.name)
+        return self.name if self.prefix is None else f'{self.prefix}:{self.name}'
 
     def getRoot(self):
         """
@@ -148,10 +144,7 @@ class Element:
         @return: The I{top} node of this tree.
         @rtype: I{Element}
         """
-        if self.parent is None:
-            return self
-        else:
-            return self.parent.getRoot()
+        return self if self.parent is None else self.parent.getRoot()
 
     def clone(self, parent=None):
         """
@@ -229,10 +222,7 @@ class Element:
         @see: __getitem__()
         """
         attr = self.getAttribute(name, ns)
-        if attr is None or attr.value is None:
-            return default
-        else:
-            return attr.getValue()
+        return default if attr is None or attr.value is None else attr.getValue()
 
     def setText(self, value):
         """
@@ -242,10 +232,7 @@ class Element:
         @return: self
         @rtype: I{Element}
         """
-        if isinstance(value, Text):
-            self.text = value
-        else:
-            self.text = Text(value)
+        self.text = value if isinstance(value, Text) else Text(value)
         return self
 
     def getText(self, default=None):
@@ -256,10 +243,7 @@ class Element:
         @return: The text content, or I{default}
         @rtype: L{Text}
         """
-        if self.hasText():
-            return self.text
-        else:
-            return default
+        return self.text if self.hasText() else default
 
     def trim(self):
         """
@@ -329,7 +313,7 @@ class Element:
                 self.attributes.append(child)
                 child.parent = self
                 continue
-            raise Exception('append %s not-valid' % child.__class__.__name__)
+            raise Exception(f'append {child.__class__.__name__} not-valid')
         return self
 
     def insert(self, objects, index=0):
@@ -349,7 +333,7 @@ class Element:
                 self.children.insert(index, child)
                 child.parent = self
             else:
-                raise Exception('append %s not-valid' % child.__class__.__name__)
+                raise Exception(f'append {child.__class__.__name__} not-valid')
         return self
 
     def remove(self, child):
@@ -399,14 +383,8 @@ class Element:
         """
         if ns is None:
             prefix, name = splitPrefix(name)
-            if prefix is None:
-                ns = None
-            else:
-                ns = self.resolvePrefix(prefix)
-        for a in self.attributes:
-            if a.match(name, ns):
-                return a
-        return default
+            ns = None if prefix is None else self.resolvePrefix(prefix)
+        return next((a for a in self.attributes if a.match(name, ns)), default)
 
     def getChild(self, name, ns=None, default=None):
         """
@@ -422,14 +400,8 @@ class Element:
         """
         if ns is None:
             prefix, name = splitPrefix(name)
-            if prefix is None:
-                ns = None
-            else:
-                ns = self.resolvePrefix(prefix)
-        for c in self.children:
-            if c.match(name, ns):
-                return c
-        return default
+            ns = None if prefix is None else self.resolvePrefix(prefix)
+        return next((c for c in self.children if c.match(name, ns)), default)
 
     def childAtPath(self, path):
         """
@@ -464,11 +436,11 @@ class Element:
         @rtype: [L{Element},...]
         """
         parts = [p for p in path.split('/') if len(p) > 0]
-        if len(parts) == 1:
-            result = self.getChildren(path)
-        else:
-            result = self.__childrenAtPath(parts)
-        return result
+        return (
+            self.getChildren(path)
+            if len(parts) == 1
+            else self.__childrenAtPath(parts)
+        )
 
     def getChildren(self, name=None, ns=None):
         """
@@ -484,10 +456,7 @@ class Element:
             if name is None:
                 return self.children
             prefix, name = splitPrefix(name)
-            if prefix is None:
-                ns = None
-            else:
-                ns = self.resolvePrefix(prefix)
+            ns = None if prefix is None else self.resolvePrefix(prefix)
         return [c for c in self.children if c.match(name, ns)]
 
     def detachChildren(self):
@@ -581,16 +550,11 @@ class Element:
         """
         for item in self.nsprefixes.items():
             if item[1] == uri:
-                prefix = item[0]
-                return prefix
+                return item[0]
         for item in self.specialprefixes.items():
             if item[1] == uri:
-                prefix = item[0]
-                return prefix
-        if self.parent is not None:
-            return self.parent.findPrefix(uri, default)
-        else:
-            return default
+                return item[0]
+        return default if self.parent is None else self.parent.findPrefix(uri, default)
 
     def findPrefixes(self, uri, match='eq'):
         """
@@ -609,10 +573,11 @@ class Element:
             if self.matcher[match](item[1], uri):
                 prefix = item[0]
                 result.append(prefix)
-        for item in self.specialprefixes.items():
-            if self.matcher[match](item[1], uri):
-                prefix = item[0]
-                result.append(prefix)
+        result.extend(
+            item[0]
+            for item in self.specialprefixes.items()
+            if self.matcher[match](item[1], uri)
+        )
         if self.parent is not None:
             result += self.parent.findPrefixes(uri, match)
         return result
@@ -687,10 +652,7 @@ class Element:
         nochildren = not len(self.children)
         notext = self.text is None
         nocontent = nochildren and notext
-        if content:
-            return nocontent
-        else:
-            return nocontent and noattrs
+        return nocontent if content else nocontent and noattrs
 
     def isnil(self):
         """
@@ -700,10 +662,7 @@ class Element:
         @rtype: boolean
         """
         nilattr = self.getAttribute('nil', ns=Namespace.xsins)
-        if nilattr is None:
-            return False
-        else:
-            return nilattr.getValue().lower() == 'true'
+        return False if nilattr is None else nilattr.getValue().lower() == 'true'
 
     def setnil(self, flag=True):
         """
@@ -749,11 +708,9 @@ class Element:
         @rtype: basestring
         """
         tab = '%*s' % (indent * 3, '')
-        result = []
-        result.append('%s<%s' % (tab, self.qname()))
+        result = [f'{tab}<{self.qname()}']
         result.append(self.nsdeclarations())
-        for a in [unicode(a) for a in self.attributes]:
-            result.append(' %s' % a)
+        result.extend(f' {a}' for a in [unicode(a) for a in self.attributes])
         if self.isempty():
             result.append('/>')
             return ''.join(result)
@@ -765,7 +722,7 @@ class Element:
             result.append(c.str(indent+1))
         if len(self.children):
             result.append('\n%s' % tab)
-        result.append('</%s>' % self.qname())
+        result.append(f'</{self.qname()}>')
         result = ''.join(result)
         return result
 
@@ -775,20 +732,17 @@ class Element:
         @return: A I{plain} string.
         @rtype: basestring
         """
-        result = []
-        result.append('<%s' % self.qname())
+        result = [f'<{self.qname()}']
         result.append(self.nsdeclarations())
-        for a in [unicode(a) for a in self.attributes]:
-            result.append(' %s' % a)
+        result.extend(f' {a}' for a in [unicode(a) for a in self.attributes])
         if self.isempty():
             result.append('/>')
             return ''.join(result)
         result.append('>')
         if self.hasText():
             result.append(self.text.escape())
-        for c in self.children:
-            result.append(c.plain())
-        result.append('</%s>' % self.qname())
+        result.extend(c.plain() for c in self.children)
+        result.append(f'</{self.qname()}>')
         result = ''.join(result)
         return result
 
@@ -801,20 +755,17 @@ class Element:
         """
         s = []
         myns = (None, self.expns)
-        if self.parent is None:
-            pns = Namespace.default
-        else:
-            pns = (None, self.parent.expns)
+        pns = Namespace.default if self.parent is None else (None, self.parent.expns)
         if myns[1] != pns[1]:
             if self.expns is not None:
-                d = ' xmlns="%s"' % self.expns
+                d = f' xmlns="{self.expns}"'
                 s.append(d)
         for p, u in self.nsprefixes.items():
             if self.parent is not None:
                 ns = self.parent.resolvePrefix(p)
                 if ns[1] == u:
                     continue
-            d = ' xmlns:%s="%s"' % (p, u)
+            d = f' xmlns:{p}="{u}"'
             s.append(d)
         return ''.join(s)
 
@@ -828,14 +779,8 @@ class Element:
         @return: True if matched.
         @rtype: boolean
         """
-        if name is None:
-            byname = True
-        else:
-            byname = self.name == name
-        if ns is None:
-            byns = True
-        else:
-            byns = self.namespace()[1] == ns[1]
+        byname = True if name is None else self.name == name
+        byns = True if ns is None else self.namespace()[1] == ns[1]
         return byname and byns
 
     def branch(self):
@@ -918,17 +863,13 @@ class Element:
         if isinstance(index, basestring):
             return self.get(index)
         else:
-            if index < len(self.children):
-                return self.children[index]
-            else:
-                return None
+            return self.children[index] if index < len(self.children) else None
 
     def __setitem__(self, index, value):
         if isinstance(index, basestring):
             self.set(index, value)
-        else:
-            if index < len(self.children) and isinstance(value, Element):
-                self.children.insert(index, value)
+        elif index < len(self.children) and isinstance(value, Element):
+            self.children.insert(index, value)
 
     def __eq__(self, rhs):
         return rhs is not None and \
@@ -937,8 +878,7 @@ class Element:
             self.namespace()[1] == rhs.namespace()[1]
 
     def __repr__(self):
-        return \
-            'Element (prefix=%s, name=%s)' % (self.prefix, self.name)
+        return f'Element (prefix={self.prefix}, name={self.name})'
 
     def __str__(self):
         return self.str()
@@ -1041,11 +981,7 @@ class PrefixNormalizer:
         @return: A set of namespaces.
         @rtype: set
         """
-        s = set()
-        for ns in n.nsprefixes.items():
-            if self.permit(ns):
-                s.add(ns[1])
-        return s
+        return {ns[1] for ns in n.nsprefixes.items() if self.permit(ns)}
 
     def genPrefixes(self):
         """
@@ -1053,13 +989,7 @@ class PrefixNormalizer:
         @return: A referse dict of prefixes.
         @rtype: {u, p}
         """
-        prefixes = {}
-        n = 0
-        for u in self.namespaces:
-            p = 'ns%d' % n
-            prefixes[u] = p
-            n += 1
-        return prefixes
+        return {u: 'ns%d' % n for n, u in enumerate(self.namespaces)}
 
     def refit(self):
         """

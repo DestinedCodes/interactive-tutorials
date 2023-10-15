@@ -77,10 +77,7 @@ class Binding:
         @return: Either the (basic|typed) unmarshaller.
         @rtype: L{UmxTyped}
         """
-        if typed:
-            return UmxTyped(self.schema())
-        else:
-            return UmxBasic()
+        return UmxTyped(self.schema()) if typed else UmxBasic()
 
     def marshaller(self):
         """
@@ -214,9 +211,7 @@ class Binding:
         @return: The I{unmarshalled} composite object.
         @rtype: L{Object},...
         """
-        dictionary = {}
-        for rt in rtypes:
-            dictionary[rt.name] = rt
+        dictionary = {rt.name: rt for rt in rtypes}
         unmarshaller = self.unmarshaller()
         composite = Factory.object('reply')
         for node in nodes:
@@ -224,7 +219,7 @@ class Binding:
             rt = dictionary.get(tag, None)
             if rt is None:
                 if node.get('id') is None:
-                    raise Exception('<%s/> not mapped to message part' % tag)
+                    raise Exception(f'<{tag}/> not mapped to message part')
                 else:
                     continue
             resolved = rt.resolve(nobuiltin=True)
@@ -303,10 +298,7 @@ class Binding:
         """
         marshaller = self.marshaller()
         if isinstance(object, (list, tuple)):
-            tags = []
-            for item in object:
-                tags.append(self.mkheader(method, hdef, item))
-            return tags
+            return [self.mkheader(method, hdef, item) for item in object]
         content = Content(tag=hdef[0], value=object, type=hdef[1])
         return marshaller.process(content)
 
@@ -360,7 +352,6 @@ class Binding:
         @return: The xml content for the <body/>
         @rtype: [L{Element},..]
         """
-        n = 0
         content = []
         wsse = self.options().wsse
         if wsse is not None:
@@ -372,6 +363,7 @@ class Binding:
             return content
         pts = self.headpart_types(method)
         if isinstance(headers, (tuple, list)):
+            n = 0
             for header in headers:
                 if isinstance(header, Element):
                     content.append(deepcopy(header))
@@ -436,10 +428,7 @@ class Binding:
         else:
             parts = method.soap.output.body.parts
         for p in parts:
-            if p.element is not None:
-                query = ElementQuery(p.element)
-            else:
-                query = TypeQuery(p.type)
+            query = ElementQuery(p.element) if p.element is not None else TypeQuery(p.type)
             pt = query.execute(self.schema())
             if pt is None:
                 raise TypeNotFound(query.ref)
@@ -467,10 +456,7 @@ class Binding:
         @rtype: [I{pdef},]
         """
         result = []
-        if input:
-            headers = method.soap.input.headers
-        else:
-            headers = method.soap.output.headers
+        headers = method.soap.input.headers if input else method.soap.output.headers
         for header in headers:
             part = header.part
             if part.element is not None:
@@ -499,10 +485,7 @@ class Binding:
         @return: The name of the type return by the method.
         @rtype: [I{rtype},..]
         """
-        result = []
-        for rt in self.bodypart_types(method, input=False):
-            result.append(rt)
-        return result
+        return list(self.bodypart_types(method, input=False))
 
 
 class PartElement(SchemaElement):
@@ -536,7 +519,4 @@ class PartElement(SchemaElement):
         return Namespace.default
 
     def resolve(self, nobuiltin=False):
-        if nobuiltin and self.__resolved.builtin():
-            return self
-        else:
-            return self.__resolved
+        return self if nobuiltin and self.__resolved.builtin() else self.__resolved

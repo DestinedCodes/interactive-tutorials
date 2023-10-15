@@ -48,12 +48,12 @@ class AbbrPreprocessor(markdown.preprocessors.Preprocessor):
         '''
         new_text = []
         for line in lines:
-            m = ABBR_REF_RE.match(line)
-            if m:
+            if m := ABBR_REF_RE.match(line):
                 abbr = m.group('abbr').strip()
                 title = m.group('title').strip()
-                self.markdown.inlinePatterns['abbr-%s'%abbr] = \
-                    AbbrPattern(self._generate_pattern(abbr), title)
+                self.markdown.inlinePatterns[f'abbr-{abbr}'] = AbbrPattern(
+                    self._generate_pattern(abbr), title
+                )
             else:
                 new_text.append(line)
         return new_text
@@ -70,7 +70,7 @@ class AbbrPreprocessor(markdown.preprocessors.Preprocessor):
         '''
         chars = list(text)
         for i in range(len(chars)):
-            chars[i] = r'[%s]' % chars[i]
+            chars[i] = f'[{chars[i]}]'
         return r'(?P<abbr>\b%s\b)' % (r''.join(chars))
 
 

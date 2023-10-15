@@ -34,8 +34,7 @@ def rdftime(time):
     time = time.replace(":", " ")
     time = time.replace("/", " ")
     time = time.split()
-    return "%s-%s-%sT%s:%s:%s-08:00" % (time[0], time[1], time[2],
-                                        time[3], time[4], time[5])
+    return f"{time[0]}-{time[1]}-{time[2]}T{time[3]}:{time[4]}:{time[5]}-08:00"
 
 
 def get_date(text):
@@ -60,7 +59,7 @@ class RssExtension (markdown.Extension):
 
 class RssTreeProcessor(markdown.treeprocessors.Treeprocessor):
 
-    def run (self, root):
+    def run(self, root):
 
         rss = etree.Element("rss")
         rss.set("version", "2.0")
@@ -70,14 +69,14 @@ class RssTreeProcessor(markdown.treeprocessors.Treeprocessor):
         for tag, text in (("title", self.ext.getConfig("TITLE")),
                           ("link", self.ext.getConfig("URL")),
                           ("description", None)):
-            
+
             element = etree.SubElement(channel, tag)
             element.text = text
 
         for child in root:
 
             if child.tag in ["h1", "h2", "h3", "h4", "h5"]:
-      
+
                 heading = child.text.strip()
                 item = etree.SubElement(channel, "item")
                 link = etree.SubElement(item, "link")
@@ -102,10 +101,9 @@ class RssTreeProcessor(markdown.treeprocessors.Treeprocessor):
                                              for node in child])
                     else:
                         content = child.text
-                    pholder = self.markdown.htmlStash.store(
-                                                "<![CDATA[ %s]]>" % content)
+                    pholder = self.markdown.htmlStash.store(f"<![CDATA[ {content}]]>")
                     description.text = pholder
-    
+
         return rss
 
 

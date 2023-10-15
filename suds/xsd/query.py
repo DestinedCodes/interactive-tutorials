@@ -42,7 +42,7 @@ class Query(Object):
         self.history = []
         self.resolved = False
         if not isqref(self.ref):
-            raise Exception('%s, must be qref' % tostr(self.ref))
+            raise Exception(f'{tostr(self.ref)}, must be qref')
 
     def execute(self, schema):
         """

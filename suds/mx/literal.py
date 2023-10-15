@@ -81,7 +81,7 @@ class Typed(Core):
         if content.type is None:
             name = content.tag
             if name.startswith('_'):
-                name = '@'+name[1:]
+                name = f'@{name[1:]}'
             content.type = self.resolver.find(name, content.value)
             if content.type is None:
                 raise TypeNotFound(content.tag)
@@ -133,9 +133,7 @@ class Typed(Core):
         if current == content.type:
             self.resolver.pop()
         else:
-            raise Exception('content (end) mismatch: top=(%s) cont=(%s)' % (
-                current,
-                content))
+            raise Exception(f'content (end) mismatch: top=({current}) cont=({content})')
 
     def node(self, content):
         #
@@ -166,19 +164,14 @@ class Typed(Core):
         # by the XSD type.
         #
         default = content.type.default
-        if default is None:
-            pass
-        else:
+        if default is not None:
             node.setText(default)
         return default
 
     def optional(self, content):
         if content.type.optional():
             return True
-        for a in content.ancestry:
-            if a.optional():
-                return True
-        return False
+        return any(a.optional() for a in content.ancestry)
 
     def encode(self, node, content):
         # Add (soap) encoding information only if the resolved
@@ -191,10 +184,8 @@ class Typed(Core):
             return
         if content.type.resolve() == content.real:
             return
-        ns = None
         name = content.real.name
-        if self.xstq:
-            ns = content.real.namespace('ns1')
+        ns = content.real.namespace('ns1') if self.xstq else None
         Typer.manual(node, name, ns)
 
     def skip(self, content):
@@ -269,7 +260,7 @@ class Typed(Core):
             if child.name is None:
                 continue
             if child.isattr():
-                name = '_%s' % child.name
+                name = f'_{child.name}'
             result.append(name)
         return result
 

@@ -96,10 +96,7 @@ class TnsFilter:
         @type root: L{Element}
         """
         tns = root.get('targetNamespace')
-        if len(self.tns):
-            matched = tns in self.tns
-        else:
-            matched = 1
+        matched = tns in self.tns if len(self.tns) else 1
         itself = ns == tns
         return matched and not itself
 

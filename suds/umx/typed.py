@@ -136,8 +136,7 @@ class Typed(Core):
 
     def translated(self, value, type):
         """ translate using the schema type """
-        if value is not None:
-            resolved = type.resolve()
-            return resolved.translate(value)
-        else:
+        if value is None:
             return value
+        resolved = type.resolve()
+        return resolved.translate(value)

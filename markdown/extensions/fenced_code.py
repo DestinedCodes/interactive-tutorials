@@ -87,8 +87,7 @@ class FencedBlockPreprocessor(markdown.preprocessors.Preprocessor):
         """ Match and store Fenced Code Blocks in the HtmlStash. """
         text = "\n".join(lines)
         while 1:
-            m = FENCED_BLOCK_RE.search(text)
-            if m:
+            if m := FENCED_BLOCK_RE.search(text):
                 lang = ''
                 if m.group('lang'):
                     lang = LANG_TAG % m.group('lang')

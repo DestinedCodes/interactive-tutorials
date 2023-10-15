@@ -134,27 +134,24 @@ class SchemaCollection:
         @return: The merged schema.
         @rtype: L{Schema}
         """
-        if len(self):
-            schema = self.children[0]
-            for s in self.children[1:]:
-                schema.merge(s)
-            return schema
-        else:
+        if not len(self):
             return None
+        schema = self.children[0]
+        for s in self.children[1:]:
+            schema.merge(s)
+        return schema
 
     def __len__(self):
         return len(self.children)
 
     def __str__(self):
         result = ['\nschema collection']
-        for s in self.children:
-            result.append(s.str(1))
+        result.extend(s.str(1) for s in self.children)
         return '\n'.join(result)
 
     def __unicode__(self):
         result = ['\nschema collection']
-        for s in self.children:
-            result.append(s.str(1))
+        result.extend(s.str(1) for s in self.children)
         return '\n'.join(result)
 
 
@@ -218,10 +215,7 @@ class Schema:
         if options.doctor is not None:
             options.doctor.examine(root)
         form = self.root.get('elementFormDefault')
-        if form is None:
-            self.form_qualified = False
-        else:
-            self.form_qualified = form == 'qualified'
+        self.form_qualified = False if form is None else form == 'qualified'
         if container is None:
             self.build()
             self.open_imports(options)
@@ -343,10 +337,7 @@ class Schema:
         @return: The schema matching the namesapce, else None.
         @rtype: L{Schema}
         """
-        if self.container is not None:
-            return self.container.locate(ns)
-        else:
-            return None
+        return self.container.locate(ns) if self.container is not None else None
 
     def custom(self, ref, context=None):
         """
@@ -356,10 +347,7 @@ class Schema:
         @return: True if B{not} a builtin, else False.
         @rtype: bool
         """
-        if ref is None:
-            return True
-        else:
-            return not self.builtin(ref, context)
+        return True if ref is None else not self.builtin(ref, context)
 
     def builtin(self, ref, context=None):
         """
@@ -400,18 +388,14 @@ class Schema:
 
     def str(self, indent=0):
         tab = '%*s' % (indent * 3, '')
-        result = []
-        result.append('%s%s' % (tab, self.id))
-        result.append('%s(raw)' % tab)
-        result.append(self.root.str(indent+1))
-        result.append('%s(model)' % tab)
-        for c in self.children:
-            result.append(c.str(indent+1))
+        result = [f'{tab}{self.id}', f'{tab}(raw)', self.root.str(indent+1)]
+        result.append(f'{tab}(model)')
+        result.extend(c.str(indent+1) for c in self.children)
         result.append('')
         return '\n'.join(result)
 
     def __repr__(self):
-        myrep = '<%s tns="%s"/>' % (self.id, self.tns[1])
+        myrep = f'<{self.id} tns="{self.tns[1]}"/>'
         return myrep.encode('utf-8')
 
     def __str__(self):

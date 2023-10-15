@@ -67,10 +67,7 @@ class Attribute:
         @return: The fully qualified name.
         @rtype: basestring
         """
-        if self.prefix is None:
-            return self.name
-        else:
-            return ':'.join((self.prefix, self.name))
+        return self.name if self.prefix is None else ':'.join((self.prefix, self.name))
 
     def setValue(self, value):
         """
@@ -80,10 +77,7 @@ class Attribute:
         @return: self
         @rtype: L{Attribute}
         """
-        if isinstance(value, Text):
-            self.value = value
-        else:
-            self.value = Text(value)
+        self.value = value if isinstance(value, Text) else Text(value)
         return self
 
     def getValue(self, default=Text('')):
@@ -95,10 +89,7 @@ class Attribute:
         @return: The attribute's value, or I{default}
         @rtype: L{Text}
         """
-        if self.hasText():
-            return self.value
-        else:
-            return default
+        return self.value if self.hasText() else default
 
     def hasText(self):
         """
@@ -129,10 +120,11 @@ class Attribute:
         @return: The namespace that has been mapped to I{prefix}
         @rtype: (I{prefix}, I{name})
         """
-        ns = Namespace.default
-        if self.parent is not None:
-            ns = self.parent.resolvePrefix(prefix)
-        return ns
+        return (
+            self.parent.resolvePrefix(prefix)
+            if self.parent is not None
+            else Namespace.default
+        )
 
     def match(self, name=None, ns=None):
         """
@@ -144,14 +136,8 @@ class Attribute:
         @return: True if matched.
         @rtype: boolean
         """
-        if name is None:
-            byname = True
-        else:
-            byname = self.name == name
-        if ns is None:
-            byns = True
-        else:
-            byns = self.namespace()[1] == ns[1]
+        byname = True if name is None else self.name == name
+        byns = True if ns is None else self.namespace()[1] == ns[1]
         return byname and byns
 
     def __eq__(self, rhs):
@@ -163,25 +149,16 @@ class Attribute:
 
     def __repr__(self):
         """ get a string representation """
-        return 'attr (prefix=%s, name=%s, value=(%s))' % (
-            self.prefix,
-            self.name,
-            self.value)
+        return f'attr (prefix={self.prefix}, name={self.name}, value=({self.value}))'
 
     def __str__(self):
         """ get an xml string representation """
         n = self.qname()
-        if self.hasText():
-            v = self.value.escape()
-        else:
-            v = self.value
-        return u'%s="%s"' % (n, v)
+        v = self.value.escape() if self.hasText() else self.value
+        return f'{n}="{v}"'
 
     def __unicode__(self):
         """ get an xml string representation """
         n = self.qname()
-        if self.hasText():
-            v = self.value.escape()
-        else:
-            v = self.value
-        return u'%s="%s"' % (n, v)
+        v = self.value.escape() if self.hasText() else self.value
+        return f'{n}="{v}"'

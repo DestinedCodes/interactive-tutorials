@@ -35,22 +35,22 @@ __build__ = "IN 20210108"
 
 class MethodNotFound(Exception):
     def __init__(self, name):
-        Exception.__init__(self, "Method not found: '%s'" % name)
+        Exception.__init__(self, f"Method not found: '{name}'")
 
 
 class PortNotFound(Exception):
     def __init__(self, name):
-        Exception.__init__(self, "Port not found: '%s'" % name)
+        Exception.__init__(self, f"Port not found: '{name}'")
 
 
 class ServiceNotFound(Exception):
     def __init__(self, name):
-        Exception.__init__(self, "Service not found: '%s'" % name)
+        Exception.__init__(self, f"Service not found: '{name}'")
 
 
 class TypeNotFound(Exception):
     def __init__(self, name):
-        Exception.__init__(self, "Type not found: '%s'" % tostr(name))
+        Exception.__init__(self, f"Type not found: '{tostr(name)}'")
 
 
 class BuildError(Exception):
@@ -108,7 +108,9 @@ def smart_str(s, encoding='utf-8', errors='strict'):
 class WebFault(Exception):
     def __init__(self, fault, document):
         if hasattr(fault, 'faultstring'):
-            Exception.__init__(self, smart_str("Server raised fault: '%s'" % fault.faultstring))
+            Exception.__init__(
+                self, smart_str(f"Server raised fault: '{fault.faultstring}'")
+            )
         self.fault = fault
         self.document = document
 
@@ -132,10 +134,7 @@ class Repr:
 def tostr(object, encoding=None):
     """ get a unicode safe string representation of an object """
     if isinstance(object, basestring):
-        if encoding is None:
-            return object
-        else:
-            return object.encode(encoding)
+        return object if encoding is None else object.encode(encoding)
     if isinstance(object, tuple):
         s = ['(']
         for item in object:
@@ -191,7 +190,7 @@ class Object(object):
     pass
 
 def objid(obj):
-    return obj.__class__.__name__ + ':' + hex(id(obj))
+    return f'{obj.__class__.__name__}:{hex(id(obj))}'
 
 
 from .client import Client

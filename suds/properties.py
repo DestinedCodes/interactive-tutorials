@@ -71,24 +71,24 @@ class Link(object):
         @rtype: L{Link}
         """
         if pA in pB.links or \
-           pB in pA.links:
+               pB in pA.links:
             raise Exception('Already linked')
         dA = pA.domains()
         dB = pB.domains()
         for d in dA:
             if d in dB:
-                raise Exception('Duplicate domain "%s" found' % d)
+                raise Exception(f'Duplicate domain "{d}" found')
         for d in dB:
             if d in dA:
-                raise Exception('Duplicate domain "%s" found' % d)
+                raise Exception(f'Duplicate domain "{d}" found')
         kA = pA.keys()
         kB = pB.keys()
         for k in kA:
             if k in kB:
-                raise Exception('Duplicate key %s found' % k)
+                raise Exception(f'Duplicate key {k} found')
         for k in kB:
             if k in kA:
-                raise Exception('Duplicate key %s found' % k)
+                raise Exception(f'Duplicate key {k} found')
         return self
 
     def teardown(self):
@@ -165,10 +165,7 @@ class Definition:
         @return: The I{default} when I{value} is I{None}, else I{value}.
         @rtype: any
         """
-        if value is None:
-            return self.default
-        else:
-            return value
+        return self.default if value is None else value
 
     def validate(self, value):
         """
@@ -180,19 +177,19 @@ class Definition:
         if value is None:
             return
         if len(self.classes) and not isinstance(value, self.classes):
-            msg = '"%s" must be: %s' % (self.name, self.classes)
+            msg = f'"{self.name}" must be: {self.classes}'
             raise AttributeError(msg)
 
     def __repr__(self):
-        return '%s: %s' % (self.name, str(self))
+        return f'{self.name}: {str(self)}'
 
     def __str__(self):
         s = []
         if len(self.classes):
-            s.append('classes=%s' % str(self.classes))
+            s.append(f'classes={str(self.classes)}')
         else:
             s.append('classes=*')
-        s.append("default=%s" % str(self.default))
+        s.append(f"default={str(self.default)}")
         return ', '.join(s)
 
 
@@ -358,9 +355,7 @@ class Properties:
             if provider is not None:
                 return provider
         history.remove(self)
-        if len(history):
-            return None
-        return self
+        return None if len(history) else self
 
     def keys(self, history=None):
         """
@@ -395,8 +390,7 @@ class Properties:
         if history is None:
             history = []
         history.append(self)
-        domains = set()
-        domains.add(self.domain)
+        domains = {self.domain}
         for x in self.links:
             if x in history:
                 continue
@@ -416,7 +410,7 @@ class Properties:
         return self
 
     def __notset(self, name):
-        return not (name in self.modified)
+        return name not in self.modified
 
     def __set(self, name, value):
         d = self.definition(name)
@@ -435,18 +429,14 @@ class Properties:
         return value
 
     def str(self, history):
-        s = []
-        s.append('Definitions:')
-        for d in self.definitions.values():
-            s.append('\t%s' % repr(d))
+        s = ['Definitions:']
+        s.extend('\t%s' % repr(d) for d in self.definitions.values())
         s.append('Content:')
-        for d in self.defined.items():
-            s.append('\t%s' % str(d))
+        s.extend('\t%s' % str(d) for d in self.defined.items())
         if self not in history:
             history.append(self)
             s.append('Linked:')
-            for x in self.links:
-                s.append(x.str(history))
+            s.extend(x.str(history) for x in self.links)
             history.remove(self)
         return '\n'.join(s)
 
@@ -483,7 +473,7 @@ class Skin(object):
 
 
 class Unskin(object):
-    def __new__(self, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):
         return args[0].__pts__
 
 

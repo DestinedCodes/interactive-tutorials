@@ -43,5 +43,4 @@ class Basic(Core):
         @rtype: L{Element}
         """
         content = Content(tag=tag, value=value)
-        result = Core.process(self, content)
-        return result
+        return Core.process(self, content)

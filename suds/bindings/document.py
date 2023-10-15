@@ -56,10 +56,7 @@ class Document(Binding):
             root = []
         n = 0
         for pd in self.param_defs(method):
-            if n < len(args):
-                value = args[n]
-            else:
-                value = kwargs.get(pd[0])
+            value = args[n] if n < len(args) else kwargs.get(pd[0])
             n += 1
             p = self.mkparam(method, pd, value)
             if p is None:
@@ -72,10 +69,7 @@ class Document(Binding):
 
     def replycontent(self, method, body):
         wrapped = method.soap.output.body.wrapped
-        if wrapped:
-            return body[0].children
-        else:
-            return body.children
+        return body[0].children if wrapped else body.children
 
     def document(self, wrapper):
         """
@@ -88,8 +82,7 @@ class Document(Binding):
         """
         tag = wrapper[1].name
         ns = wrapper[1].namespace('ns0')
-        d = Element(tag, ns=ns)
-        return d
+        return Element(tag, ns=ns)
 
     def mkparam(self, method, pdef, object):
         #
@@ -98,10 +91,7 @@ class Document(Binding):
         # arrays are simply unbounded elements.
         #
         if isinstance(object, (list, tuple)):
-            tags = []
-            for item in object:
-                tags.append(self.mkparam(method, pdef, item))
-            return tags
+            return [self.mkparam(method, pdef, item) for item in object]
         else:
             return Binding.mkparam(self, method, pdef, object)
 
@@ -139,8 +129,7 @@ class Document(Binding):
         if wrapped:
             for pt in rts:
                 resolved = pt.resolve(nobuiltin=True)
-                for child, ancestry in resolved:
-                    result.append(child)
+                result.extend(child for child, ancestry in resolved)
                 break
         else:
             result += rts
@@ -154,7 +143,4 @@ class Document(Binding):
         @return: True if contains <choice/>
         @rtype: boolean
         """
-        for x in ancestry:
-            if x.choice():
-                return True
-        return False
+        return any(x.choice() for x in ancestry)

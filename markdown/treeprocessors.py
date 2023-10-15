@@ -3,7 +3,7 @@ import re
 
 def isString(s):
     """ Check if it's string """
-    return isinstance(s, str) or isinstance(s, str)
+    return isinstance(s, (str, str))
 
 class Processor:
     def __init__(self, markdown_instance=None):
@@ -62,8 +62,7 @@ class InlineProcessor(Treeprocessor):
         Returns: placeholder id and string index, after the found placeholder.
         """
 
-        m = self.__placeholder_re.search(data, index)
-        if m:
+        if m := self.__placeholder_re.search(data, index):
             return m.group(1), m.end()
         else:
             return None, index + 1
@@ -235,9 +234,7 @@ class InlineProcessor(Treeprocessor):
 
         placeholder = self.__stashNode(node, pattern.type())
 
-        return "%s%s%s%s" % (leftData,
-                             match.group(1),
-                             placeholder, match.groups()[-1]), True, 0
+        return f"{leftData}{match.group(1)}{placeholder}{match.groups()[-1]}", True, 0
 
     def run(self, tree):
         """Apply inline patterns to a parsed Markdown tree.
@@ -272,27 +269,25 @@ class InlineProcessor(Treeprocessor):
                     stack += lst
                     insertQueue.append((child, lst))
 
-                if len(list(child)) > 0:
+                if list(child):
                     stack.append(child)
 
             for element, lst in insertQueue:
                 if element.text:
                     element.text = \
-                        markdown.inlinepatterns.handleAttributes(element.text, 
+                            markdown.inlinepatterns.handleAttributes(element.text, 
                                                                  element)
-                i = 0
-                for newChild in lst:
+                for i, newChild in enumerate(lst):
                     # Processing attributes
                     if newChild.tail:
                         newChild.tail = \
-                            markdown.inlinepatterns.handleAttributes(newChild.tail,
+                                markdown.inlinepatterns.handleAttributes(newChild.tail,
                                                                      element)
                     if newChild.text:
                         newChild.text = \
-                            markdown.inlinepatterns.handleAttributes(newChild.text,
+                                markdown.inlinepatterns.handleAttributes(newChild.text,
                                                                      newChild)
                     element.insert(i, newChild)
-                    i += 1
         return tree
 
 
@@ -323,7 +318,4 @@ class PrettifyTreeprocessor(Treeprocessor):
         # inline content and missed by _prettifyETree.
         brs = root.iter('br')
         for br in brs:
-            if not br.tail or not br.tail.strip():
-                br.tail = '\n'
-            else:
-                br.tail = '\n%s' % br.tail
+            br.tail = '\n' if not br.tail or not br.tail.strip() else '\n%s' % br.tail

@@ -54,7 +54,7 @@ def qualify(ref, resolvers, defns=Namespace.default):
                 ns = resolved
                 break
         if ns is None:
-            raise Exception('prefix (%s) not resolved' % p)
+            raise Exception(f'prefix ({p}) not resolved')
     else:
         ns = defns
     return (n, ns[1])
@@ -81,8 +81,4 @@ class Filter:
         self.items = items
 
     def __contains__(self, x):
-        if self.inclusive:
-            result = x in self.items
-        else:
-            result = x not in self.items
-        return result
+        return x in self.items if self.inclusive else x not in self.items

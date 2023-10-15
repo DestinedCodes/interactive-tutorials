@@ -54,10 +54,7 @@ class AttrList:
         @return: A count of I{real} attributes.
         @rtype: L{int}
         """
-        n = 0
-        for a in self.real():
-            n += 1
-        return n
+        return sum(1 for _ in self.real())
 
     def lang(self):
         """
@@ -66,9 +63,7 @@ class AttrList:
         @rtype: I{generator}
         """
         for a in self.raw:
-            if a.qname() == 'xml:lang':
-                return a.value
-            return None
+            return a.value if a.qname() == 'xml:lang' else None
 
     def skip(self, attr):
         """

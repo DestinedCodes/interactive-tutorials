@@ -38,8 +38,7 @@ def items(sobject):
     @return: A list of items contained in I{sobject}.
     @rtype: [(key, value),...]
     """
-    for item in sobject:
-        yield item
+    yield from sobject
 
 
 def asdict(sobject):
@@ -149,7 +148,7 @@ class Object:
                 self.__keylist__.remove(name)
         except:
             cls = self.__class__.__name__
-            raise AttributeError("%s has no attribute '%s'" % (cls, name))
+            raise AttributeError(f"{cls} has no attribute '{name}'")
 
     def __getitem__(self, name):
         if isinstance(name, int):
@@ -282,8 +281,8 @@ class Printer:
             else:
                 return self.print_collection(object, h, n+2)
         if isinstance(object, basestring):
-            return '"%s"' % tostr(object)
-        return '%s' % tostr(object)
+            return f'"{tostr(object)}"'
+        return f'{tostr(object)}'
 
     def print_object(self, d, h, n, nl=False):
         """ print complex using the specified indent (n) and newline (nl). """
@@ -291,15 +290,11 @@ class Printer:
         cls = d.__class__
         md = d.__metadata__
         if d in h:
-            s.append('(')
-            s.append(cls.__name__)
-            s.append(')')
-            s.append('...')
+            s.extend(('(', cls.__name__, ')', '...'))
             return ''.join(s)
         h.append(d)
         if nl:
-            s.append('\n')
-            s.append(self.indent(n))
+            s.extend(('\n', self.indent(n)))
         if cls != Object:
             s.append('(')
             if isinstance(d, Facade):
@@ -312,18 +307,11 @@ class Printer:
             if self.exclude(d, item):
                 continue
             item = self.unwrap(d, item)
-            s.append('\n')
-            s.append(self.indent(n+1))
+            s.extend(('\n', self.indent(n+1), item[0]))
             if isinstance(item[1], (list, tuple)):
-                s.append(item[0])
                 s.append('[]')
-            else:
-                s.append(item[0])
-            s.append(' = ')
-            s.append(self.process(item[1], h, n, True))
-        s.append('\n')
-        s.append(self.indent(n))
-        s.append('}')
+            s.extend((' = ', self.process(item[1], h, n, True)))
+        s.extend(('\n', self.indent(n), '}'))
         h.pop()
         return ''.join(s)
 
@@ -334,22 +322,16 @@ class Printer:
         h.append(d)
         s = []
         if nl:
-            s.append('\n')
-            s.append(self.indent(n))
+            s.extend(('\n', self.indent(n)))
         s.append('{')
         for item in d.items():
-            s.append('\n')
-            s.append(self.indent(n+1))
+            s.extend(('\n', self.indent(n+1)))
             if isinstance(item[1], (list, tuple)):
-                s.append(tostr(item[0]))
-                s.append('[]')
+                s.extend((tostr(item[0]), '[]'))
             else:
                 s.append(tostr(item[0]))
-            s.append(' = ')
-            s.append(self.process(item[1], h, n, True))
-        s.append('\n')
-        s.append(self.indent(n))
-        s.append('}')
+            s.extend((' = ', self.process(item[1], h, n, True)))
+        s.extend(('\n', self.indent(n), '}'))
         h.pop()
         return ''.join(s)
 
@@ -360,10 +342,7 @@ class Printer:
         h.append(c)
         s = []
         for item in c:
-            s.append('\n')
-            s.append(self.indent(n))
-            s.append(self.process(item, h, n-2))
-            s.append(',')
+            s.extend(('\n', self.indent(n), self.process(item, h, n-2), ','))
         h.pop()
         return ''.join(s)
 
@@ -387,10 +366,7 @@ class Printer:
         try:
             md = d.__metadata__
             pmd = getattr(md, '__print__', None)
-            if pmd is None:
-                return False
-            excludes = getattr(pmd, 'excludes', [])
-            return item[0] in excludes
+            return False if pmd is None else item[0] in getattr(pmd, 'excludes', [])
         except:
             pass
         return False

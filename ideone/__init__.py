@@ -40,11 +40,8 @@ class Ideone(object):
         """
         Transform the array from Ideone into a Python dictionary.
         """
-        result_dict = {}
         property_list = result.item
-        for item in property_list:
-            result_dict[item.key[0]] = item.value[0]
-        return result_dict
+        return {item.key[0]: item.value[0] for item in property_list}
 
     @staticmethod
     def _handle_error(result_dict):
@@ -62,13 +59,7 @@ class Ideone(object):
         """
         Convert the Ideone language list into a Python dictionary.
         """
-        language_dict = {}
-        for language in language_array.item:
-            key = language.key[0]
-            value = language.value[0]
-            language_dict[key] = value
-
-        return language_dict
+        return {language.key[0]: language.value[0] for language in language_array.item}
 
     def _translate_language_name(self, language_name):
         """
@@ -114,8 +105,9 @@ class Ideone(object):
 
         # Check for a match of just the language name without any
         # version information
-        simple_languages = dict((k,v.split('(')[0].strip())
-                                for (k,v) in list(languages.items()))
+        simple_languages = {
+            k: v.split('(')[0].strip() for (k, v) in list(languages.items())
+        }
         for ideone_index, simple_name in list(simple_languages.items()):
             if simple_name.lower() == language_name.lower():
                 return ideone_index
@@ -129,8 +121,7 @@ class Ideone(object):
                                                     cutoff=0.3)
         # Add quotes and delimit with strings for easier to read
         # output
-        similar_choices_string = ", ".join(["'" + s + "'"
-                                            for s in similar_choices])
+        similar_choices_string = ", ".join([f"'{s}'" for s in similar_choices])
         error_string = ("Couldn't match '%s' to an Ideone accepted language.\n"
                         "Did you mean one of the following: %s")
         raise IdeoneError(error_string % (language_name, similar_choices_string))

@@ -52,9 +52,10 @@ class RawHtmlPostprocessor(Postprocessor):
                 else:
                     html = markdown.HTML_REMOVED_TEXT
             if safe or not self.markdown.safeMode:
-                text = text.replace("<p>%s</p>" % 
-                            (markdown.preprocessors.HTML_PLACEHOLDER % i),
-                            html + "\n")
+                text = text.replace(
+                    f"<p>{markdown.preprocessors.HTML_PLACEHOLDER % i}</p>",
+                    html + "\n",
+                )
             text =  text.replace(markdown.preprocessors.HTML_PLACEHOLDER % i, 
                                  html)
         return text

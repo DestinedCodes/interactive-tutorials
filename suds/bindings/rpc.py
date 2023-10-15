@@ -41,22 +41,19 @@ class RPC(Binding):
     def envelope(self, header, body):
         env = Binding.envelope(self, header, body)
         env.addPrefix(encns[0], encns[1])
-        env.set('%s:encodingStyle' % envns[0],
-                'http://schemas.xmlsoap.org/soap/encoding/')
+        env.set(
+            f'{envns[0]}:encodingStyle',
+            'http://schemas.xmlsoap.org/soap/encoding/',
+        )
         return env
 
     def bodycontent(self, method, args, kwargs):
-        n = 0
         root = self.method(method)
-        for pd in self.param_defs(method):
-            if n < len(args):
-                value = args[n]
-            else:
-                value = kwargs.get(pd[0])
+        for n, pd in enumerate(self.param_defs(method)):
+            value = args[n] if n < len(args) else kwargs.get(pd[0])
             p = self.mkparam(method, pd, value)
             if p is not None:
                 root.append(p)
-            n += 1
         return root
 
     def replycontent(self, method, body):
@@ -74,8 +71,7 @@ class RPC(Binding):
         ns = method.soap.input.body.namespace
         if ns[0] is None:
             ns = ('ns0', ns[1])
-        method = Element(method.name, ns=ns)
-        return method
+        return Element(method.name, ns=ns)
 
 
 class Encoded(RPC):
@@ -92,7 +88,4 @@ class Encoded(RPC):
         @return: Either the (basic|typed) unmarshaller.
         @rtype: L{UmxTyped}
         """
-        if typed:
-            return UmxEncoded(self.schema())
-        else:
-            return RPC.unmarshaller(self, typed)
+        return UmxEncoded(self.schema()) if typed else RPC.unmarshaller(self, typed)

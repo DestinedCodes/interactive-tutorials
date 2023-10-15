@@ -31,10 +31,7 @@ class BlockProcessor:
 
     def lastChild(self, parent):
         """ Return the last child of an etree element. """
-        if len(parent):
-            return parent[-1]
-        else:
-            return None
+        return parent[-1] if len(parent) else None
 
     def detab(self, text):
         """ Remove a tab from the front of each line of the given text. """
@@ -157,18 +154,11 @@ class ListIndentProcessor(BlockProcessor):
 
     def get_level(self, parent, block):
         """ Get level of indent based on list level. """
-        # Get indent level
-        m = self.INDENT_RE.match(block)
-        if m:
+        if m := self.INDENT_RE.match(block):
             indent_level = len(m.group(1))/markdown.TAB_LENGTH
         else:
             indent_level = 0
-        if self.parser.state.isstate('list'):
-            # We're in a tightlist - so we already are at correct parent.
-            level = 1
-        else:
-            # We're in a looselist - so we need to find parent.
-            level = 0
+        level = 1 if self.parser.state.isstate('list') else 0
         # Step through children of tree to find matching indent level.
         while indent_level > level:
             child = self.lastChild(parent)
@@ -226,8 +216,7 @@ class BlockQuoteProcessor(BlockProcessor):
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
-        m = self.RE.search(block)
-        if m:
+        if m := self.RE.search(block):
             before = block[:m.start()] # Lines before blockquote
             # Pass lines before blockquote in recursively for parsing forst.
             self.parser.parseBlocks(parent, [before])
@@ -306,8 +295,7 @@ class OListProcessor(BlockProcessor):
         """ Break a block into list items. """
         items = []
         for line in block.split('\n'):
-            m = self.CHILD_RE.match(line)
-            if m:
+            if m := self.CHILD_RE.match(line):
                 # This is a new item. Append
                 items.append(m.group(3))
             elif self.INDENT_RE.match(line):
@@ -341,8 +329,7 @@ class HashHeaderProcessor(BlockProcessor):
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
-        m = self.RE.search(block)
-        if m:
+        if m := self.RE.search(block):
             before = block[:m.start()] # All lines before header
             after = block[m.end():]    # All lines after header
             if before:
@@ -373,10 +360,7 @@ class SetextHeaderProcessor(BlockProcessor):
     def run(self, parent, blocks):
         lines = blocks.pop(0).split('\n')
         # Determine level. ``=`` is 1 and ``-`` is 2.
-        if lines[1].startswith('='):
-            level = 1
-        else:
-            level = 2
+        level = 1 if lines[1].startswith('=') else 2
         h = markdown.etree.SubElement(parent, 'h%d' % level)
         h.text = lines[0].strip()
         if len(lines) > 2:
@@ -430,15 +414,14 @@ class EmptyBlockProcessor(BlockProcessor):
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
-        m = self.RE.match(block)
-        if m:
+        if m := self.RE.match(block):
             # Add remaining line to master blocks for later.
             blocks.insert(0, block[m.end():])
             sibling = self.lastChild(parent)
             if sibling and sibling.tag == 'pre' and sibling[0] and \
-                    sibling[0].tag == 'code':
+                        sibling[0].tag == 'code':
                 # Last block is a codeblock. Append to preserve whitespace.
-                sibling[0].text = markdown.AtomicString('%s/n/n/n' % sibling[0].text )
+                sibling[0].text = markdown.AtomicString(f'{sibling[0].text}/n/n/n')
 
 
 class ParagraphProcessor(BlockProcessor):

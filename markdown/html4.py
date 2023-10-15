@@ -153,20 +153,20 @@ def _serialize_html(write, elem, encoding, qnames, namespaces):
                         v = _escape_attrib_html(v, encoding)
                     # FIXME: handle boolean attributes
                     write(" %s=\"%s\"" % (qnames[k], v))
-                if namespaces:
-                    items = list(namespaces.items())
-                    items.sort(key=lambda x: x[1]) # sort on prefix
-                    for v, k in items:
-                        if k:
-                            k = ":" + k
-                        write(" xmlns%s=\"%s\"" % (
-                            k.encode(encoding),
-                            _escape_attrib(v, encoding)
-                            ))
+            if namespaces:
+                items = list(namespaces.items())
+                items.sort(key=lambda x: x[1]) # sort on prefix
+                for v, k in items:
+                    if k:
+                        k = ":" + k
+                    write(" xmlns%s=\"%s\"" % (
+                        k.encode(encoding),
+                        _escape_attrib(v, encoding)
+                        ))
             write(">")
             tag = tag.lower()
             if text:
-                if tag == "script" or tag == "style":
+                if tag in ["script", "style"]:
                     write(_encode(text, encoding))
                 else:
                     write(_escape_cdata(text, encoding))
@@ -223,10 +223,7 @@ def _namespaces(elem, encoding, default_namespace=None):
                         prefix = "ns%d" % len(namespaces)
                     if prefix != "xml":
                         namespaces[uri] = prefix
-                if prefix:
-                    qnames[qname] = encode("%s:%s" % (prefix, tag))
-                else:
-                    qnames[qname] = encode(tag) # default element
+                qnames[qname] = encode(f"{prefix}:{tag}") if prefix else encode(tag)
             else:
                 if default_namespace:
                     # FIXME: can this be handled in XML 1.0?

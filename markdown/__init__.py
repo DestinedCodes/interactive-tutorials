@@ -39,6 +39,7 @@ Copyright 2004 Manfred Stienstra (the original version)
 License: BSD (see docs/LICENSE for details).
 """
 
+
 version = "2.0.3"
 version_info = (2,0,3, "Final")
 
@@ -76,9 +77,9 @@ DOC_TAG = "div"     # Element used to wrap document - later removed
 # Placeholders
 STX = '\u0002'  # Use STX ("Start of text") for start-of-placeholder
 ETX = '\u0003'  # Use ETX ("End of text") for end-of-placeholder
-INLINE_PLACEHOLDER_PREFIX = STX+"klzzwxh:"
-INLINE_PLACEHOLDER = INLINE_PLACEHOLDER_PREFIX + "%s" + ETX
-AMP_SUBSTITUTE = STX+"amp"+ETX
+INLINE_PLACEHOLDER_PREFIX = f"{STX}klzzwxh:"
+INLINE_PLACEHOLDER = f"{INLINE_PLACEHOLDER_PREFIX}%s{ETX}"
+AMP_SUBSTITUTE = f"{STX}amp{ETX}"
 
 
 """
@@ -333,8 +334,10 @@ class Markdown:
                 except NotImplementedError as e:
                     message(ERROR, e)
             else:
-                message(ERROR, 'Extension "%s.%s" must be of type: "markdown.Extension".' \
-                    % (ext.__class__.__module__, ext.__class__.__name__))
+                message(
+                    ERROR,
+                    f'Extension "{ext.__class__.__module__}.{ext.__class__.__name__}" must be of type: "markdown.Extension".',
+                )
 
     def registerExtension(self, extension):
         """ This gets called by the extension """
@@ -355,8 +358,10 @@ class Markdown:
         try:
             self.serializer = self.output_formats[format.lower()]
         except KeyError:
-            message(CRITICAL, 'Invalid Output Format: "%s". Use one of %s.' \
-                               % (format, list(self.output_formats.keys())))
+            message(
+                CRITICAL,
+                f'Invalid Output Format: "{format}". Use one of {list(self.output_formats.keys())}.',
+            )
 
     def convert(self, source):
         """
@@ -392,19 +397,18 @@ class Markdown:
 
         # Run the tree-processors
         for treeprocessor in list(self.treeprocessors.values()):
-            newRoot = treeprocessor.run(root)
-            if newRoot:
+            if newRoot := treeprocessor.run(root):
                 root = newRoot
 
         # Serialize _properly_.  Strip top-level tags.
         output, length = codecs.utf_8_decode(self.serializer(root, encoding="utf-8"))
         if self.stripTopLevelTags:
             try:
-                start = output.index('<%s>'%DOC_TAG)+len(DOC_TAG)+2
-                end = output.rindex('</%s>'%DOC_TAG)
+                start = output.index(f'<{DOC_TAG}>') + len(DOC_TAG) + 2
+                end = output.rindex(f'</{DOC_TAG}>')
                 output = output[start:end].strip()
             except ValueError:
-                if output.strip().endswith('<%s />'%DOC_TAG):
+                if output.strip().endswith(f'<{DOC_TAG} />'):
                     # We have an empty document
                     output = ''
                 else:
@@ -475,10 +479,7 @@ class Extension:
 
     def getConfig(self, key):
         """ Return a setting for the given key or an empty string. """
-        if key in self.config:
-            return self.config[key][0]
-        else:
-            return ""
+        return self.config[key][0] if key in self.config else ""
 
     def getConfigInfo(self):
         """ Return all config settings as a list of tuples. """
@@ -534,25 +535,26 @@ def load_extension(ext_name, configs = []):
         try: # Old style (mdx.<extension>)
             module = __import__(module_name_old_style)
         except ImportError:
-           message(WARN, "Failed loading extension '%s' from '%s' or '%s'"
-               % (ext_name, module_name_new_style, module_name_old_style))
-           # Return None so we don't try to initiate none-existant extension
-           return None
+            message(
+                WARN,
+                f"Failed loading extension '{ext_name}' from '{module_name_new_style}' or '{module_name_old_style}'",
+            )
+            # Return None so we don't try to initiate none-existant extension
+            return None
 
     # If the module is loaded successfully, we expect it to define a
     # function called makeExtension()
     try:
         return module.makeExtension(list(configs.items()))
     except AttributeError:
-        message(CRITICAL, "Failed to initiate extension '%s'" % ext_name)
+        message(CRITICAL, f"Failed to initiate extension '{ext_name}'")
 
 
 def load_extensions(ext_names):
     """Loads multiple extensions"""
     extensions = []
     for ext_name in ext_names:
-        extension = load_extension(ext_name)
-        if extension:
+        if extension := load_extension(ext_name):
             extensions.append(extension)
     return extensions
 

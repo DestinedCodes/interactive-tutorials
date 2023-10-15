@@ -105,8 +105,8 @@ class MultiRef:
             id = child.get('id')
             if id is None:
                 self.build_catalog(child)
-            else:                
-                key = '#%s' % id
+            else:        
+                key = f'#{id}'
                 self.catalog[key] = child
 
     def soaproot(self, node):
@@ -121,7 +121,4 @@ class MultiRef:
         @rtype: bool
         """
         root = node.getAttribute('root', ns=soapenc)
-        if root is None:
-            return True
-        else:
-            return root.value == '1'
+        return True if root is None else root.value == '1'

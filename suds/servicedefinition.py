@@ -183,7 +183,7 @@ class ServiceDefinition:
         for ns in self.prefixes:
             if u == ns[1]:
                 return ns[0]
-        raise Exception('ns (%s) not mapped' % u)
+        raise Exception(f'ns ({u}) not mapped')
 
     def xlate(self, type):
         """
@@ -210,47 +210,35 @@ class ServiceDefinition:
         @return: A textual description.
         @rtype: str
         """
-        s = []
         if html:
             indent = lambda n: '<p>%*s' % (n * 3, ' ')
             line = '<hr/>'
         else:
             indent = lambda n: '\n%*s' % (n * 3, ' ')
             line = '\n' + '-'*80
-        s.append('Service ( %s ) tns="%s"' %
-                 (self.service.name, self.wsdl.tns[1]))
-        s.append(indent(1))
-        s.append('Prefixes (%d)' % len(self.prefixes))
+        s = [
+            f'Service ( {self.service.name} ) tns="{self.wsdl.tns[1]}"',
+            indent(1),
+            'Prefixes (%d)' % len(self.prefixes),
+        ]
         for p in self.prefixes:
-            s.append(indent(2))
-            s.append('%s = "%s"' % p)
-        s.append(indent(1))
-        s.append('Ports (%d):' % len(self.ports))
+            s.extend((indent(2), '%s = "%s"' % p))
+        s.extend((indent(1), 'Ports (%d):' % len(self.ports)))
         for p in self.ports:
-            s.append(indent(2))
-            s.append('(%s)' % p[0].name)
-            s.append(indent(3))
-            s.append('Methods (%d):' % len(p[1]))
+            s.extend((indent(2), f'({p[0].name})', indent(3), 'Methods (%d):' % len(p[1])))
             for m in p[1]:
-                sig = []
                 s.append(indent(4))
-                sig.append(m[0])
-                sig.append('(')
+                sig = [m[0], '(']
                 for p in m[1]:
-                    sig.append(self.xlate(p[1]))
-                    sig.append(' ')
-                    sig.append(p[0])
-                    sig.append(', ')
+                    sig.extend((self.xlate(p[1]), ' ', p[0], ', '))
                 sig.append(')')
                 try:
                     s.append(''.join(sig))
                 except:
                     pass
-            s.append(indent(3))
-            s.append('Types (%d):' % len(self.types))
+            s.extend((indent(3), 'Types (%d):' % len(self.types)))
             for t in self.types:
-                s.append(indent(4))
-                s.append(self.xlate(t[0]))
+                s.extend((indent(4), self.xlate(t[0])))
         s.append(line)
         return ''.join(s)
 
