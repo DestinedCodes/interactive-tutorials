@@ -44,10 +44,7 @@ class Matcher:
         self.cls = cls
 
     def __eq__(self, x):
-        if self.cls is None:
-            return x is None
-        else:
-            return isinstance(x, self.cls)
+        return x is None if self.cls is None else isinstance(x, self.cls)
 
 
 class ContentAppender:
@@ -94,11 +91,9 @@ class ContentAppender:
         @param content: The content to append.
         @type content: L{Content}
         """
-        appender = self.default
-        for a in self.appenders:
-            if a[0] == content.value:
-                appender = a[1]
-                break
+        appender = next(
+            (a[1] for a in self.appenders if a[0] == content.value), self.default
+        )
         appender.append(parent, content)
 
 
@@ -190,8 +185,7 @@ class PrimativeAppender(Appender):
     def append(self, parent, content):
         if content.tag.startswith('_'):
             attr = content.tag[1:]
-            value = tostr(content.value)
-            if value:
+            if value := tostr(content.value):
                 parent.set(attr, value)
         else:
             child = self.node(content)
@@ -307,8 +301,7 @@ class TextAppender(Appender):
     def append(self, parent, content):
         if content.tag.startswith('_'):
             attr = content.tag[1:]
-            value = tostr(content.value)
-            if value:
+            if value := tostr(content.value):
                 parent.set(attr, value)
         else:
             child = self.node(content)

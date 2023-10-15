@@ -70,7 +70,7 @@ class DepList:
         @return: The sorted items.
         @rtype: list
         """
-        self.sorted = list()
+        self.sorted = []
         self.pushed = set()
         for item in self.unsorted:
             popped = []
@@ -87,8 +87,7 @@ class DepList:
                 except StopIteration:
                     popped.append(self.pop())
                     continue
-            for p in popped:
-                self.sorted.append(p)
+            self.sorted.extend(iter(popped))
         self.unsorted = self.sorted
         return self.sorted
 

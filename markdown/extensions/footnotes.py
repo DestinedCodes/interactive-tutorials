@@ -102,14 +102,14 @@ class FootnoteExtension(markdown.Extension):
         if self.getConfig("UNIQUE_IDS"):
             return 'fn:%d-%s' % (self.unique_prefix, id)
         else:
-            return 'fn:%s' % id
+            return f'fn:{id}'
 
     def makeFootnoteRefId(self, id):
         """ Return footnote back-link id. """
         if self.getConfig("UNIQUE_IDS"):
             return 'fnref:%d-%s' % (self.unique_prefix, id)
         else:
-            return 'fnref:%s' % id
+            return f'fnref:{id}'
 
     def makeFootnotesDiv(self, root):
         """ Return div of footnotes as et Element. """
@@ -127,10 +127,10 @@ class FootnoteExtension(markdown.Extension):
             li.set("id", self.makeFootnoteId(id))
             self.parser.parseChunk(li, self.footnotes[id])
             backlink = etree.Element("a")
-            backlink.set("href", "#" + self.makeFootnoteRefId(id))
+            backlink.set("href", f"#{self.makeFootnoteRefId(id)}")
             backlink.set("rev", "footnote")
             backlink.set("title", "Jump back to footnote %d in the text" % \
-                            (self.footnotes.index(id)+1))
+                                (self.footnotes.index(id)+1))
             backlink.text = FN_BACKLINK_TEXT
 
             if li.getchildren():
@@ -194,8 +194,7 @@ class FootnotePreprocessor(markdown.preprocessors.Preprocessor):
         """
         counter = 0
         for line in lines:
-            m = DEF_RE.match(line)
-            if m:
+            if m := DEF_RE.match(line):
                 return counter, m.group(2), m.group(3)
             counter += 1
         return counter, None, None
@@ -264,7 +263,7 @@ class FootnotePattern(markdown.inlinepatterns.Pattern):
         a = etree.SubElement(sup, "a")
         id = m.group(2)
         sup.set('id', self.footnotes.makeFootnoteRefId(id))
-        a.set('href', '#' + self.footnotes.makeFootnoteId(id))
+        a.set('href', f'#{self.footnotes.makeFootnoteId(id)}')
         a.set('rel', 'footnote')
         a.text = str(self.footnotes.footnotes.index(id) + 1)
         return sup
@@ -277,10 +276,8 @@ class FootnoteTreeprocessor(markdown.treeprocessors.Treeprocessor):
         self.footnotes = footnotes
 
     def run(self, root):
-        footnotesDiv = self.footnotes.makeFootnotesDiv(root)
-        if footnotesDiv:
-            result = self.footnotes.findFootnotesPlaceholder(root)
-            if result:
+        if footnotesDiv := self.footnotes.makeFootnotesDiv(root):
+            if result := self.footnotes.findFootnotesPlaceholder(root):
                 node, isText = result
                 if isText:
                     node.text = None

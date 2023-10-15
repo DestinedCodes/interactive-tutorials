@@ -21,6 +21,7 @@ Python objects.
 """
 
 
+
 __all__ = ('Date', 'Time', 'DateTime', 'FixedOffsetTimezone', 'UtcTimezone',
            'LocalTimezone')
 
@@ -38,10 +39,9 @@ SNIPPET_ZONE = r'(?:(?P<tz_sign>[-+])(?P<tz_hour>\d{1,2})' + \
                r'(?::?(?P<tz_minute>\d{1,2})(?::?(?P<tz_second>\d{1,2}))?)?)' + \
                r'|(?P<tz_utc>[Zz])'
 
-PATTERN_DATE = r'^%s(?:%s)?$' % (SNIPPET_DATE, SNIPPET_ZONE)
-PATTERN_TIME = r'^%s(?:%s)?$' % (SNIPPET_TIME, SNIPPET_ZONE)
-PATTERN_DATETIME = r'^%s[T ]%s(?:%s)?$' % (SNIPPET_DATE, SNIPPET_TIME,
-                                           SNIPPET_ZONE)
+PATTERN_DATE = f'^{SNIPPET_DATE}(?:{SNIPPET_ZONE})?$'
+PATTERN_TIME = f'^{SNIPPET_TIME}(?:{SNIPPET_ZONE})?$'
+PATTERN_DATETIME = f'^{SNIPPET_DATE}[T ]{SNIPPET_TIME}(?:{SNIPPET_ZONE})?$'
 
 RE_DATE = re.compile(PATTERN_DATE)
 RE_TIME = re.compile(PATTERN_TIME)
@@ -70,7 +70,7 @@ class Date(object):
         elif isinstance(value, str):
             self.value = self.parse(value)
         else:
-            raise ValueError('invalid type for Date(): %s' % (type(value), ))
+            raise ValueError(f'invalid type for Date(): {type(value)}')
 
     @staticmethod
     def parse(value):
@@ -90,7 +90,7 @@ class Date(object):
         """
         match_result = RE_DATE.match(value)
         if match_result is None:
-            raise ValueError('date data has invalid format "%s"' % value)
+            raise ValueError(f'date data has invalid format "{value}"')
 
         value = date_from_match(match_result)
 
@@ -125,7 +125,7 @@ class Time(object):
         elif isinstance(value, str):
             self.value = self.parse(value)
         else:
-            raise ValueError('invalid type for Time(): %s' % (type(value), ))
+            raise ValueError(f'invalid type for Time(): {type(value)}')
 
     @staticmethod
     def parse(value):
@@ -142,7 +142,7 @@ class Time(object):
         """
         match_result = RE_TIME.match(value)
         if match_result is None:
-            raise ValueError('date data has invalid format "%s"' % (value, ))
+            raise ValueError(f'date data has invalid format "{value}"')
 
         date = time_from_match(match_result)
         tzinfo = tzinfo_from_match(match_result)
@@ -180,7 +180,7 @@ class DateTime(object):
         elif isinstance(value, str):
             self.value = self.parse(value)
         else:
-            raise ValueError('invalid type for DateTime(): %s' % type(value))
+            raise ValueError(f'invalid type for DateTime(): {type(value)}')
 
     @staticmethod
     def parse(value):
@@ -197,7 +197,7 @@ class DateTime(object):
         """
         match_result = RE_DATETIME.match(value)
         if match_result is None:
-            raise ValueError('date data has invalid format "%s"' % (value, ))
+            raise ValueError(f'date data has invalid format "{value}"')
 
         date = date_from_match(match_result)
         time = time_from_match(match_result)
@@ -243,17 +243,14 @@ class FixedOffsetTimezone(datetime.tzinfo):
         http://docs.python.org/library/datetime.html#datetime.tzinfo.tzname
 
         """
-        sign = '+'
-        if self.__offset < datetime.timedelta():
-            sign = '-'
-
+        sign = '-' if self.__offset < datetime.timedelta() else '+'
         # total_seconds was introduced in Python 2.7
         if hasattr(self.__offset, 'total_seconds'):
             total_seconds = self.__offset.total_seconds()
         else:
             total_seconds = (self.__offset.days * 24 * 60 * 60) + \
-                            (self.__offset.seconds) + \
-                            (self.__offset.microseconds / 1000000.0)
+                                (self.__offset.seconds) + \
+                                (self.__offset.microseconds / 1000000.0)
 
         hours = total_seconds // (60 * 60)
         total_seconds -= hours * 60 * 60
@@ -277,10 +274,10 @@ class FixedOffsetTimezone(datetime.tzinfo):
         return datetime.timedelta(0)
 
     def __str__(self):
-        return 'FixedOffsetTimezone %s' % (self.tzname(None), )
+        return f'FixedOffsetTimezone {self.tzname(None)}'
 
     def __unicode__(self):
-        return 'FixedOffsetTimezone %s' % (self.tzname(None), )
+        return f'FixedOffsetTimezone {self.tzname(None)}'
 
 
 class UtcTimezone(FixedOffsetTimezone):
@@ -328,10 +325,7 @@ class LocalTimezone(datetime.tzinfo):
         http://docs.python.org/library/datetime.html#datetime.tzinfo.utcoffset
 
         """
-        if self.__is_daylight_time(dt):
-            return self.__dst_offset
-        else:
-            return self.__offset
+        return self.__dst_offset if self.__is_daylight_time(dt) else self.__offset
 
     def dst(self, dt):
         """
@@ -348,10 +342,7 @@ class LocalTimezone(datetime.tzinfo):
         http://docs.python.org/library/datetime.html#datetime.tzinfo.tzname
 
         """
-        if self.__is_daylight_time(dt):
-            return time.tzname[1]
-        else:
-            return time.tzname[0]
+        return time.tzname[1] if self.__is_daylight_time(dt) else time.tzname[0]
 
     def __is_daylight_time(self, dt):
         if not time.daylight:
@@ -362,13 +353,11 @@ class LocalTimezone(datetime.tzinfo):
 
     def __str__(self):
         dt = datetime.datetime.now()
-        return 'LocalTimezone %s offset: %s dst: %s' \
-            % (self.tzname(dt), self.utcoffset(dt), self.dst(dt))
+        return f'LocalTimezone {self.tzname(dt)} offset: {self.utcoffset(dt)} dst: {self.dst(dt)}'
 
     def __unicode__(self):
         dt = datetime.datetime.now()
-        return 'LocalTimezone %s offset: %s dst: %s' \
-            % (self.tzname(dt), self.utcoffset(dt), self.dst(dt))
+        return f'LocalTimezone {self.tzname(dt)} offset: {self.utcoffset(dt)} dst: {self.dst(dt)}'
 
 
 def date_from_match(match_object):
@@ -443,7 +432,7 @@ def tzinfo_from_match(match_object):
         if tz_delta == datetime.timedelta():
             tzinfo = UtcTimezone()
         else:
-            tz_multiplier = int('%s1' % (tz_sign, ))
+            tz_multiplier = int(f'{tz_sign}1')
             tz_delta = tz_multiplier * tz_delta
             tzinfo = FixedOffsetTimezone(tz_delta)
 

@@ -55,9 +55,7 @@ class Core:
         document = Document()
         if isinstance(content.value, Property):
             root = self.node(content)  # root is never used?
-            self.append(document, content)
-        else:
-            self.append(document, content)
+        self.append(document, content)
         return document.root()
 
     def append(self, parent, content):

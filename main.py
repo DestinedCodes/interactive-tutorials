@@ -99,7 +99,7 @@ def pageurl(value, language):
     if value.startswith("http"):
         return value
     else:
-        return urllib.parse.quote("/%s/%s" % (language, value.replace(' ', '_')))
+        return urllib.parse.quote(f"/{language}/{value.replace(' ', '_')}")
 
 
 def _wikify_one(language, pat):
@@ -107,19 +107,14 @@ def _wikify_one(language, pat):
     Wikifies one link.
     """
     page_title = pat.group(2)
-    if pat.group(1):
-        page_name = pat.group(1).rstrip('|')
-    else:
-        page_name = page_title
-
+    page_name = pat.group(1).rstrip('|') if pat.group(1) else page_title
     # interwiki
     if ':' in page_name and not page_name.startswith("http"):
         parts = page_name.split(':', 2)
         if page_name == page_title:
             page_title = parts[1]
 
-    link = "<a href='%s'>%s</a>" % (pageurl(page_name, language), page_title)
-    return link
+    return f"<a href='{pageurl(page_name, language)}'>{page_title}</a>"
 
 
 def wikify(text, language):
@@ -129,7 +124,7 @@ def wikify(text, language):
 
 def untab(text):
     lines = text.strip("\n").split("\n")
-    if not all([x.startswith("    ") or x == "" for x in lines]):
+    if not all(x.startswith("    ") or x == "" for x in lines):
         return "\n".join(lines)
 
     return "\n".join([x[4:] if len(x) >= 4 else "" for x in lines])
@@ -148,7 +143,7 @@ def init_tutorials():
             continue
 
         if domain not in constants.DOMAIN_DATA:
-            logging.warning("skipping domain %s beacause no domain data exists" % domain)
+            logging.warning(f"skipping domain {domain} beacause no domain data exists")
             continue
 
         for language in os.listdir(os.path.join(os.path.dirname(__file__), "tutorials", domain)):
@@ -168,9 +163,9 @@ def init_tutorials():
                     continue
 
                 tutorial = tutorial_file[:-3]
-                logging.debug("loading tutorial %s" % tutorial)
+                logging.debug(f"loading tutorial {tutorial}")
 
-                if not tutorial in tutorial_data[domain][language]:
+                if tutorial not in tutorial_data[domain][language]:
                     tutorial_data[domain][language][tutorial] = {}
 
                 tutorial_dict = tutorial_data[domain][language][tutorial]
@@ -184,8 +179,9 @@ def init_tutorials():
                 links = [x[0].strip("|") if x[0] else x[1] for x in WIKI_WORD_PATTERN.findall(stripped_text)]
                 tutorial_dict["links"] = [(x, pageurl(x, language)) for x in links]
 
-                tutorial_sections = sections.findall(tutorial_dict["text"])
-                if tutorial_sections:
+                if tutorial_sections := sections.findall(
+                    tutorial_dict["text"]
+                ):
                     text, code, output, solution = tutorial_sections[0]
                     tutorial_dict["page_title"] = tutorial
                     tutorial_dict["text"] = wikify(text, language)
@@ -202,14 +198,17 @@ def init_tutorials():
                     tutorial_dict["is_tutorial"] = False
 
                 for link in links:
-                    if not link in tutorial_data[domain][language]:
+                    if link not in tutorial_data[domain][language]:
                         tutorial_data[domain][language][link] = {
                             "page_title" : link,
                             "text": contributing_tutorials,
                             "code": ""
                         }
 
-                    if not "back_chapter" in tutorial_data[domain][language][link]:
+                    if (
+                        "back_chapter"
+                        not in tutorial_data[domain][language][link]
+                    ):
                         tutorial_data[domain][language][link]["back_chapter"] = tutorial.replace(" ", "_")
                     elif not link.startswith("http"):
                         logging.info("Warning! duplicate links to tutorial %s from tutorial %s/%s", link, language, tutorial)
@@ -217,10 +216,16 @@ def init_tutorials():
                     num_links = len(links)
                     page_index = links.index(link)
                     if page_index > 0:
-                        if not "previous_chapter" in tutorial_data[domain][language][link]:
+                        if (
+                            "previous_chapter"
+                            not in tutorial_data[domain][language][link]
+                        ):
                             tutorial_data[domain][language][link]["previous_chapter"] = links[page_index - 1].replace(" ", "_")
                     if page_index < (num_links - 1):
-                        if not "next_chapter" in tutorial_data[domain][language][link]:
+                        if (
+                            "next_chapter"
+                            not in tutorial_data[domain][language][link]
+                        ):
                             tutorial_data[domain][language][link]["next_chapter"] = links[page_index + 1].replace(" ", "_")
 
 
@@ -231,11 +236,8 @@ def get_languages():
     return sorted(tutorial_data[get_host()].keys())
 
 def get_language_names():
-    arr = []
     langs = get_languages()
-    for lang in langs:
-        arr.append(LANGUAGES.get(lang))
-    return arr
+    return [LANGUAGES.get(lang) for lang in langs]
 
 def get_host():
     if is_development_mode() or "ondigitalocean.app" in request.host:
@@ -259,15 +261,13 @@ def get_tutorial_data(tutorial_id, language="en"):
 
 
 def get_tutorial(tutorial_id, language="en"):
-    td = get_tutorial_data(tutorial_id, language)
-
-    if not td:
+    if td := get_tutorial_data(tutorial_id, language):
+        return td
+    else:
         return {
             "page_title": cgi.escape(tutorial_id),
             "text": "Page not found."
         }
-    else:
-        return td
 
 
 def error404():
@@ -284,7 +284,7 @@ def error404():
 # We are checking only the current domain subfolder and adding all the files to files_to_track array
 # so that they can be tracked and on change of any of these files, reload the server in real time
 def get_filenames_to_watch_and_reload():
-    dir_to_look = "tutorials/" + current_domain
+    dir_to_look = f"tutorials/{current_domain}"
     files_to_track = []
 
     for dirname, dirs, files in os.walk(dir_to_look):
@@ -292,7 +292,7 @@ def get_filenames_to_watch_and_reload():
             filename = os.path.join(dirname, filename)
             if os.path.isfile(filename):
                 files_to_track.append(filename)
-    
+
     return files_to_track
 
 
@@ -326,9 +326,7 @@ def static_file():
 def signin():
     email = request.args.get("email", None)
     password = request.args.get("password", None)
-    user = users.findOne({"email": email})
-
-    if user:
+    if user := users.findOne({"email": email}):
         session["user_id"] = str(user._id)
         return make_response(json.dumps({"status": "error", "error": "no_user"}))
 
@@ -375,10 +373,14 @@ def index(title, language="en"):
     domain_data["language_code"] = language
 
     if request.method == "GET":
-        title_suffix = "Learn %s - Free Interactive %s Tutorial" % (domain_data["language_uppercase"], domain_data["language_uppercase"])
-        html_title = "%s - %s" % (title.replace("_", " "), title_suffix) if title != "Welcome" else title_suffix
+        title_suffix = f'Learn {domain_data["language_uppercase"]} - Free Interactive {domain_data["language_uppercase"]} Tutorial'
+        html_title = (
+            f'{title.replace("_", " ")} - {title_suffix}'
+            if title != "Welcome"
+            else title_suffix
+        )
 
-        if not "uid" in session:
+        if "uid" not in session:
             session["uid"] = binascii.b2a_hex(os.urandom(16))
 
         uid = session["uid"]
@@ -387,7 +389,7 @@ def index(title, language="en"):
             site_links = tutorial_data[get_host()][language]["Welcome"]["links"]
         except Exception as e:
             site_links = []
-            logging.error("cant get site links for %s %s" % (get_host(), language))
+            logging.error(f"cant get site links for {get_host()} {language}")
 
         return make_response(render_template(
             "index-python.html" if (language == "en" and domain_data["language"] == "python") else "index.html",
@@ -409,13 +411,10 @@ def index(title, language="en"):
     # POST method handling
     data = run_code(request.json["code"], domain_data["language_id"])
 
-    if "output" in current_tutorial_data and current_tutorial_data["output"] == data["output"]:
-        data["solved"] = True
-
-
-    else:
-        data["solved"] = False
-
+    data["solved"] = (
+        "output" in current_tutorial_data
+        and current_tutorial_data["output"] == data["output"]
+    )
     return make_response(json.dumps(data))
 
 

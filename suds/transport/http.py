@@ -112,11 +112,10 @@ class HttpTransport(Transport):
         """
         tm = self.options.timeout
         url = self.u2opener()
-        if self.u2ver() < 2.6:
-            socket.setdefaulttimeout(tm)
-            return url.open(u2request)
-        else:
+        if self.u2ver() >= 2.6:
             return url.open(u2request, timeout=tm)
+        socket.setdefaulttimeout(tm)
+        return url.open(u2request)
 
     def u2opener(self):
         """
@@ -135,9 +134,7 @@ class HttpTransport(Transport):
         @return: A list of handlers to be installed in the opener.
         @rtype: [Handler,...]
         """
-        handlers = []
-        handlers.append(u2.ProxyHandler(self.proxy))
-        return handlers
+        return [u2.ProxyHandler(self.proxy)]
 
     def u2ver(self):
         """
@@ -147,8 +144,7 @@ class HttpTransport(Transport):
         """
         try:
             part = u2.__version__.split('.', 1)
-            n = float('.'.join(part))
-            return n
+            return float('.'.join(part))
         except Exception as e:
             log.exception(e)
             return 0
@@ -179,9 +175,9 @@ class HttpAuthenticated(HttpTransport):
 
     def addcredentials(self, request):
         credentials = self.credentials()
-        if not (None in credentials):
+        if None not in credentials:
             encoded = b64encode(':'.join(credentials).encode('utf-8')).decode("ascii")
-            basic = 'Basic %s' % encoded
+            basic = f'Basic {encoded}'
             request.headers['Authorization'] = basic
 
     def credentials(self):

@@ -7,11 +7,12 @@ Preprocessors work on source text before we start doing anything too
 complicated. 
 """
 
+
 import re
 import markdown
 
-HTML_PLACEHOLDER_PREFIX = markdown.STX+"wzxhzdk:"
-HTML_PLACEHOLDER = HTML_PLACEHOLDER_PREFIX + "%d" + markdown.ETX
+HTML_PLACEHOLDER_PREFIX = f"{markdown.STX}wzxhzdk:"
+HTML_PLACEHOLDER = f"{HTML_PLACEHOLDER_PREFIX}%d{markdown.ETX}"
 
 class Processor:
     def __init__(self, markdown_instance=None):
@@ -92,12 +93,12 @@ class HtmlBlockPreprocessor(Preprocessor):
     def _equal_tags(self, left_tag, right_tag):
         if left_tag == 'div' or left_tag[0] in ['?', '@', '%']: # handle PHP, etc.
             return True
-        if ("/" + left_tag) == right_tag:
+        if f"/{left_tag}" == right_tag:
             return True
         if (right_tag == "--" and left_tag == "--"):
             return True
         elif left_tag == right_tag[1:] \
-            and right_tag[0] != "<":
+                and right_tag[0] != "<":
             return True
         else:
             return False
@@ -133,14 +134,18 @@ class HtmlBlockPreprocessor(Preprocessor):
                         left_tag = "--"
                         right_tag, data_index = self._get_right_tag(left_tag, block)
                         # keep checking conditions below and maybe just append
-                    
+
                     if data_index < len(block) \
-                        and markdown.isBlockLevel(left_tag): 
+                            and markdown.isBlockLevel(left_tag): 
                         text.insert(0, block[data_index:])
                         block = block[:data_index]
 
-                    if not (markdown.isBlockLevel(left_tag) \
-                        or block[1] in ["!", "?", "@", "%"]):
+                    if not markdown.isBlockLevel(left_tag) and block[1] not in [
+                        "!",
+                        "?",
+                        "@",
+                        "%",
+                    ]:
                         new_blocks.append(block)
                         continue
 
@@ -149,23 +154,18 @@ class HtmlBlockPreprocessor(Preprocessor):
                         continue
 
                     if block.rstrip().endswith(">") \
-                        and self._equal_tags(left_tag, right_tag):
+                            and self._equal_tags(left_tag, right_tag):
                         new_blocks.append(
                             self.markdown.htmlStash.store(block.strip()))
-                        continue
-                    else: #if not block[1] == "!":
-                        # if is block level tag and is not complete
+                    elif markdown.isBlockLevel(left_tag) or left_tag == "--" \
+                                and not block.rstrip().endswith(">"):
+                        items.append(block.strip())
+                        in_tag = True
+                    else:
+                        new_blocks.append(
+                        self.markdown.htmlStash.store(block.strip()))
 
-                        if markdown.isBlockLevel(left_tag) or left_tag == "--" \
-                            and not block.rstrip().endswith(">"):
-                            items.append(block.strip())
-                            in_tag = True
-                        else:
-                            new_blocks.append(
-                            self.markdown.htmlStash.store(block.strip()))
-
-                        continue
-
+                    continue
                 new_blocks.append(block)
 
             else:
@@ -181,9 +181,7 @@ class HtmlBlockPreprocessor(Preprocessor):
                     items = []
 
         if items:
-            new_blocks.append(self.markdown.htmlStash.store('\n\n'.join(items)))
-            new_blocks.append('\n')
-
+            new_blocks.extend((self.markdown.htmlStash.store('\n\n'.join(items)), '\n'))
         new_text = "\n\n".join(new_blocks)
         return new_text.split("\n")
 
@@ -193,11 +191,10 @@ class ReferencePreprocessor(Preprocessor):
 
     RE = re.compile(r'^(\ ?\ ?\ ?)\[([^\]]*)\]:\s*([^ ]*)(.*)$', re.DOTALL)
 
-    def run (self, lines):
+    def run(self, lines):
         new_text = [];
         for line in lines:
-            m = self.RE.match(line)
-            if m:
+            if m := self.RE.match(line):
                 id = m.group(2).strip().lower()
                 t = m.group(4).strip()  # potential title
                 if not t:

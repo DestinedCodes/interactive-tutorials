@@ -45,10 +45,7 @@ class Builder:
         else:
             type = name
         cls = type.name
-        if type.mixed():
-            data = Factory.property(cls)
-        else:
-            data = Factory.object(cls)
+        data = Factory.property(cls) if type.mixed() else Factory.object(cls)
         resolved = type.resolve()
         md = data.__metadata__
         md.sxtype = resolved
@@ -72,17 +69,16 @@ class Builder:
         value = None
         if type.unbounded():
             value = []
-        else:
-            if len(resolved) > 0:
-                if resolved.mixed():
-                    value = Factory.property(resolved.name)
-                    md = value.__metadata__
-                    md.sxtype = resolved
-                else:
-                    value = Factory.object(resolved.name)
-                    md = value.__metadata__
-                    md.sxtype = resolved
-                    md.ordering = self.ordering(resolved)
+        elif len(resolved) > 0:
+            if resolved.mixed():
+                value = Factory.property(resolved.name)
+                md = value.__metadata__
+                md.sxtype = resolved
+            else:
+                value = Factory.object(resolved.name)
+                md = value.__metadata__
+                md.sxtype = resolved
+                md.ordering = self.ordering(resolved)
         setattr(data, type.name, value)
         if value is not None:
             data = value
@@ -96,15 +92,13 @@ class Builder:
     def add_attributes(self, data, type):
         """ add required attributes """
         for attr, ancestry in type.attributes():
-            name = '_%s' % attr.name
+            name = f'_{attr.name}'
             value = attr.get_default()
             setattr(data, name, value)
 
     def skip_child(self, child, ancestry):
         """ get whether or not to skip the specified child """
-        if child.any():
-            return True
-        return any(x.choice() for x in ancestry)
+        return True if child.any() else any(x.choice() for x in ancestry)
 
     def ordering(self, type):
         """ get the ordering """
@@ -114,6 +108,6 @@ class Builder:
             if child.name is None:
                 continue
             if child.isattr():
-                name = '_%s' % child.name
+                name = f'_{child.name}'
             result.append(name)
         return result

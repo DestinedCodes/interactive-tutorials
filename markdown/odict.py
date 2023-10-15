@@ -37,8 +37,7 @@ class OrderedDict(dict):
         self.keyOrder.remove(key)
 
     def __iter__(self):
-        for k in self.keyOrder:
-            yield k
+        yield from self.keyOrder
 
     def pop(self, k, *args):
         result = super(OrderedDict, self).pop(k, *args)

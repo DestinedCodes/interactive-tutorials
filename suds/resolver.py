@@ -114,7 +114,7 @@ class PathResolver(Resolver):
             if resolved:
                 result = result.resolve(nobuiltin=True)
         except PathResolver.BadPath:
-            log.error('path: "%s", not-found' % path)
+            log.error(f'path: "{path}", not-found')
         return result
 
     def root(self, parts):
@@ -253,10 +253,7 @@ class TreeResolver(Resolver):
         @return: The pushed frame.
         @rtype: L{Frame}
         """
-        if isinstance(x, Frame):
-            frame = x
-        else:
-            frame = Frame(x)
+        frame = x if isinstance(x, Frame) else Frame(x)
         self.stack.append(frame)
         log.debug('push: (%s)\n%s', Repr(frame), Repr(self.stack))
         return frame
@@ -267,10 +264,7 @@ class TreeResolver(Resolver):
         @return: The top I{frame}, else None.
         @rtype: L{Frame}
         """
-        if len(self.stack):
-            return self.stack[-1]
-        else:
-            return Frame.Empty()
+        return self.stack[-1] if len(self.stack) else Frame.Empty()
 
     def pop(self):
         """
@@ -358,7 +352,7 @@ class NodeResolver(TreeResolver):
         @return: The found schema I{type}
         @rtype: L{xsd.sxbase.SchemaObject}
         """
-        name = '@%s' % name
+        name = f'@{name}'
         parent = self.top().resolved
         if parent is None:
             result, ancestry = self.query(name, node)
@@ -418,7 +412,6 @@ class GraphResolver(TreeResolver):
         @return: The found schema I{type}
         @rtype: L{xsd.sxbase.SchemaObject}
         """
-        known = None
         parent = self.top().resolved
         if parent is None:
             result, ancestry = self.query(name)
@@ -426,16 +419,12 @@ class GraphResolver(TreeResolver):
             result, ancestry = self.getchild(name, parent)
         if result is None:
             return None
-        if isinstance(object, Object):
-            known = self.known(object)
+        known = self.known(object) if isinstance(object, Object) else None
         if push:
             frame = Frame(result, resolved=known, ancestry=ancestry)
             self.push(frame)
         if resolved:
-            if known is None:
-                result = result.resolve()
-            else:
-                result = known
+            result = result.resolve() if known is None else known
         return result
 
     def query(self, name):
@@ -454,17 +443,13 @@ class GraphResolver(TreeResolver):
     def wsdl(self):
         """ get the wsdl """
         container = self.schema.container
-        if container is None:
-            return None
-        else:
-            return container.wsdl
+        return None if container is None else container.wsdl
 
     def known(self, object):
         """ get the type specified in the object's metadata """
         try:
             md = object.__metadata__
-            known = md.sxtype
-            return known
+            return md.sxtype
         except:
             pass
 
@@ -485,15 +470,10 @@ class Frame:
 
     class Empty:
         def __getattr__(self, name):
-            if name == 'ancestry':
-                return ()
-            else:
-                return None
+            return () if name == 'ancestry' else None
 
 
 class Stack(list):
     def __repr__(self):
-        result = []
-        for item in self:
-            result.append(repr(item))
+        result = [repr(item) for item in self]
         return '\n'.join(result)

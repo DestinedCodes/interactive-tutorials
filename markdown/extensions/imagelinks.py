@@ -47,7 +47,7 @@ class ImageLinkPreprocessor(markdown.preprocessors.Preprocessor):
         in_image_block = False
 
         new_lines = []
-        
+
         for line in lines:
 
             if line.startswith("<~~~~~~~"):
@@ -62,7 +62,7 @@ class ImageLinkPreprocessor(markdown.preprocessors.Preprocessor):
             else:
 
                 line = line.strip()
-                
+
                 if line.endswith("~~~~~~>") or not line:
                     in_image_block = False
                     new_block = "<div><br/><center><span class='image-links'>\n"
@@ -75,29 +75,27 @@ class ImageLinkPreprocessor(markdown.preprocessors.Preprocessor):
                             new_block += IMAGE_LINK % (photo_url,
                                                        photo_url.get_thumbnail(),
                                                        title)
-                            
+
                             album_url_hash[str(photo_url.get_album())] = 1
-                        
+
                     new_block += "<br/>"
-                            
+
                     new_block += "</span>"
                     new_block += SLIDESHOW_LINK % url.get_slideshow()
 
-                    album_urls = list(album_url_hash.keys())
-                    album_urls.sort()
-
+                    album_urls = sorted(album_url_hash.keys())
                     if len(album_urls) == 1:
                         new_block += ALBUM_LINK % (album_urls[0], "complete album")
                     else :
                         for i in range(len(album_urls)) :
                             new_block += ALBUM_LINK % (album_urls[i],
                                                        "album %d" % (i + 1) )
-                    
-                    new_lines.append(new_block + "</center><br/></div>")
+
+                    new_lines.append(f"{new_block}</center><br/></div>")
 
                 elif line[1:6] == "~~~~~" :
                     rows.append([])  # start a new row
-                else :
+                else:
                     parts = line.split()
                     line = parts[0]
                     title = " ".join(parts[1:])
@@ -105,10 +103,10 @@ class ImageLinkPreprocessor(markdown.preprocessors.Preprocessor):
                     album, photo = line.split("/")
                     photo_url = url.get_photo(album, photo,
                                               len(all_images)+1)
-                    all_images.append(photo_url)                        
+                    all_images.append(photo_url)
                     rows[-1].append((photo_url, title))
 
-                    if not album in albums :
+                    if album not in albums:
                         albums.append(album)
 
         return new_lines

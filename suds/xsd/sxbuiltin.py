@@ -75,15 +75,15 @@ class XBoolean(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring):
-                return XBoolean.translation[0].get(value)
-            else:
-                return None
+            return (
+                XBoolean.translation[0].get(value)
+                if isinstance(value, basestring)
+                else None
+            )
+        if isinstance(value, (bool, int)):
+            return XBoolean.translation[1].get(value)
         else:
-            if isinstance(value, (bool, int)):
-                return XBoolean.translation[1].get(value)
-            else:
-                return value
+            return value
 
 
 class XInteger(XBuiltin):
@@ -93,15 +93,9 @@ class XInteger(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return int(value)
-            else:
-                return None
+            return int(value) if isinstance(value, basestring) and len(value) else None
         else:
-            if isinstance(value, int):
-                return str(value)
-            else:
-                return value
+            return str(value) if isinstance(value, int) else value
 
 
 class XLong(XBuiltin):
@@ -111,15 +105,9 @@ class XLong(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return int(value)
-            else:
-                return None
+            return int(value) if isinstance(value, basestring) and len(value) else None
         else:
-            if isinstance(value, int):
-                return str(value)
-            else:
-                return value
+            return str(value) if isinstance(value, int) else value
 
 
 class XFloat(XBuiltin):
@@ -129,15 +117,9 @@ class XFloat(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return float(value)
-            else:
-                return None
+            return float(value) if isinstance(value, basestring) and len(value) else None
         else:
-            if isinstance(value, float):
-                return str(value)
-            else:
-                return value
+            return str(value) if isinstance(value, float) else value
 
 
 class XDate(XBuiltin):
@@ -147,15 +129,12 @@ class XDate(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return dt.Date(value).value
-            else:
-                return None
-        else:
-            if isinstance(value, datetime.date):
-                return str(dt.Date(value))
-            else:
-                return value
+            return (
+                dt.Date(value).value
+                if isinstance(value, basestring) and len(value)
+                else None
+            )
+        return str(dt.Date(value)) if isinstance(value, datetime.date) else value
 
 
 class XTime(XBuiltin):
@@ -165,15 +144,12 @@ class XTime(XBuiltin):
 
     def translate(self, value, topython=True):
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return dt.Time(value).value
-            else:
-                return None
-        else:
-            if isinstance(value, datetime.time):
-                return str(dt.Time(value))
-            else:
-                return value
+            return (
+                dt.Time(value).value
+                if isinstance(value, basestring) and len(value)
+                else None
+            )
+        return str(dt.Time(value)) if isinstance(value, datetime.time) else value
 
 
 class XDateTime(XBuiltin):
@@ -183,15 +159,15 @@ class XDateTime(XBuiltin):
 
     def translate(self, value, topython=True):	    
         if topython:
-            if isinstance(value, basestring) and len(value):
-                return dt.DateTime(value).value
-            else:
-                return None
+            return (
+                dt.DateTime(value).value
+                if isinstance(value, basestring) and len(value)
+                else None
+            )
+        if isinstance(value, datetime.datetime):
+            return str(dt.DateTime(value))
         else:
-            if isinstance(value, datetime.datetime):
-                return str(dt.DateTime(value))
-            else:
-                return value
+            return value
 
 
 class Factory:
@@ -277,7 +253,4 @@ class Factory:
         @rtype: L{XBuiltin}
         """
         fn = cls.tags.get(name)
-        if fn is not None:
-            return fn(schema, name)
-        else:
-            return XBuiltin(schema, name)
+        return fn(schema, name) if fn is not None else XBuiltin(schema, name)

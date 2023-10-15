@@ -50,7 +50,7 @@ class Reader:
         @return: the mangled name.
         """
         h = hashlib.sha256(name.encode('utf8')).hexdigest()
-        return '%s-%s' % (h, x)
+        return f'{h}-{x}'
 
 
 class DocumentReader(Reader):
@@ -105,10 +105,7 @@ class DocumentReader(Reader):
         @return: The I{options} when I{cachingpolicy} = B{0}.
         @rtype: L{Cache}
         """
-        if self.options.cachingpolicy == 0:
-            return self.options.cache
-        else:
-            return NoCache()
+        return self.options.cache if self.options.cachingpolicy == 0 else NoCache()
 
 
 class DefinitionsReader(Reader):
@@ -162,7 +159,4 @@ class DefinitionsReader(Reader):
         @return: The I{options} when I{cachingpolicy} = B{1}.
         @rtype: L{Cache}
         """
-        if self.options.cachingpolicy == 1:
-            return self.options.cache
-        else:
-            return NoCache()
+        return self.options.cache if self.options.cachingpolicy == 1 else NoCache()

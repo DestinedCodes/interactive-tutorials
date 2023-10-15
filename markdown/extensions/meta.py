@@ -66,8 +66,7 @@ class MetaPreprocessor(markdown.preprocessors.Preprocessor):
             line = lines.pop(0)
             if line.strip() == '':
                 break # blank line - done
-            m1 = META_RE.match(line)
-            if m1:
+            if m1 := META_RE.match(line):
                 key = m1.group('key').lower().strip()
                 meta[key] = [m1.group('value').strip()]
             else:

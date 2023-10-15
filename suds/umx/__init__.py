@@ -43,12 +43,11 @@ class Content(Object):
             setattr(self, k, v)
 
     def __getattr__(self, name):
-        if name not in self.__dict__:
-            if name in self.extensions:
-                v = None
-                setattr(self, name, v)
-            else:
-                raise AttributeError('Content has no attribute %s' % name)
-        else:
+        if name in self.__dict__:
             v = self.__dict__[name]
+        elif name in self.extensions:
+            v = None
+            setattr(self, name, v)
+        else:
+            raise AttributeError(f'Content has no attribute {name}')
         return v

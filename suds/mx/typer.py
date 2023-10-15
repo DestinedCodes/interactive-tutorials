@@ -115,7 +115,6 @@ class Typer:
     def known(cls, object):
         try:
             md = object.__metadata__
-            known = md.sxtype
-            return known
+            return md.sxtype
         except:
             pass

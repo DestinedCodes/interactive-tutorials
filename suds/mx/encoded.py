@@ -75,7 +75,7 @@ class Encoded(Literal):
         child = parent.getChild(tag)
         child.addPrefix(ns0[0], ns0[1])
         child.addPrefix(ns1[0], ns1[1])
-        name = '%s:arrayType' % ns1[0]
+        name = f'{ns1[0]}:arrayType'
         value = '%s:%s[%d]' % (ns0[0], aty[0], len(array))
         child.set(name, value)
 
@@ -86,10 +86,8 @@ class Encoded(Literal):
         if content.real.any():
             Typer.auto(node, content.value)
             return
-        ns = None
         name = content.real.name
-        if self.xstq:
-            ns = content.real.namespace()
+        ns = content.real.namespace() if self.xstq else None
         Typer.manual(node, name, ns)
 
     def cast(self, content):

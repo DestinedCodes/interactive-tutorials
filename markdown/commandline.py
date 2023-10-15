@@ -38,9 +38,8 @@ def parse_options():
                     'safe': False,
                     'extensions': [],
                     'encoding': None }, CRITICAL
-        else:
-            print(OPTPARSE_WARNING)
-            return None, None
+        print(OPTPARSE_WARNING)
+        return None, None
 
     parser = optparse.OptionParser(usage="%prog INPUTFILE [options]")
     parser.add_option("-f", "--file", dest="filename", default=sys.stdout,
@@ -68,7 +67,7 @@ def parse_options():
 
     (options, args) = parser.parse_args()
 
-    if not len(args) == 1:
+    if len(args) != 1:
         parser.print_help()
         return None, None
     else:

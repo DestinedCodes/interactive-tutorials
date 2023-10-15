@@ -48,7 +48,7 @@ class TypedContent(Content):
         qref = self.qref()
         if qref is None:
             return self
-        key = 'resolved:nb=%s' % nobuiltin
+        key = f'resolved:nb={nobuiltin}'
         cached = self.cache.get(key)
         if cached is not None:
             return cached
@@ -62,10 +62,7 @@ class TypedContent(Content):
             raise TypeNotFound(qref)
         self.cache[key] = resolved
         if resolved.builtin():
-            if nobuiltin:
-                result = self
-            else:
-                result = resolved
+            result = self if nobuiltin else resolved
         else:
             result = resolved.resolve(nobuiltin)
         return result
@@ -113,16 +110,12 @@ class Complex(SchemaObject):
         return ('name',)
 
     def extension(self):
-        for c in self.rawchildren:
-            if c.extension():
-                return True
-        return False
+        return any(c.extension() for c in self.rawchildren)
 
     def mixed(self):
-        for c in self.rawchildren:
-            if isinstance(c, SimpleContent) and c.mixed():
-                return True
-        return False
+        return any(
+            isinstance(c, SimpleContent) and c.mixed() for c in self.rawchildren
+        )
 
 
 class Group(SchemaObject):
@@ -196,10 +189,9 @@ class Simple(SchemaObject):
         return ('restriction', 'any', 'list',)
 
     def enum(self):
-        for child, ancestry in self.children():
-            if isinstance(child, Enumeration):
-                return True
-        return False
+        return any(
+            isinstance(child, Enumeration) for child, ancestry in self.children()
+        )
 
     def mixed(self):
         return len(self)
@@ -208,16 +200,10 @@ class Simple(SchemaObject):
         return ('name',)
 
     def extension(self):
-        for c in self.rawchildren:
-            if c.extension():
-                return True
-        return False
+        return any(c.extension() for c in self.rawchildren)
 
     def restriction(self):
-        for c in self.rawchildren:
-            if c.restriction():
-                return True
-        return False
+        return any(c.restriction() for c in self.rawchildren)
 
 
 class List(SchemaObject):
@@ -318,16 +304,10 @@ class ComplexContent(SchemaObject):
         return ('attribute', 'attributeGroup', 'extension', 'restriction')
 
     def extension(self):
-        for c in self.rawchildren:
-            if c.extension():
-                return True
-        return False
+        return any(c.extension() for c in self.rawchildren)
 
     def restriction(self):
-        for c in self.rawchildren:
-            if c.restriction():
-                return True
-        return False
+        return any(c.restriction() for c in self.rawchildren)
 
 
 class SimpleContent(SchemaObject):
@@ -339,16 +319,10 @@ class SimpleContent(SchemaObject):
         return ('extension', 'restriction')
 
     def extension(self):
-        for c in self.rawchildren:
-            if c.extension():
-                return True
-        return False
+        return any(c.extension() for c in self.rawchildren)
 
     def restriction(self):
-        for c in self.rawchildren:
-            if c.restriction():
-                return True
-        return False
+        return any(c.restriction() for c in self.rawchildren)
 
     def mixed(self):
         return len(self)
@@ -398,16 +372,10 @@ class Element(TypedContent):
         return ('attribute', 'simpleType', 'complexType', 'any',)
 
     def extension(self):
-        for c in self.rawchildren:
-            if c.extension():
-                return True
-        return False
+        return any(c.extension() for c in self.rawchildren)
 
     def restriction(self):
-        for c in self.rawchildren:
-            if c.restriction():
-                return True
-        return False
+        return any(c.restriction() for c in self.rawchildren)
 
     def dependencies(self):
         deps = []
@@ -564,7 +532,7 @@ class Import(SchemaObject):
             root.set('url', url)
             return self.schema.instance(root, url, options)
         except TransportError:
-            msg = 'imported schema (%s) at (%s), failed' % (self.ns[1], url)
+            msg = f'imported schema ({self.ns[1]}) at ({url}), failed'
             log.error('%s, %s', self.id, msg, exc_info=True)
             raise Exception(msg)
 
@@ -619,7 +587,7 @@ class Include(SchemaObject):
             self.__applytns(root)
             return self.schema.instance(root, url, options)
         except TransportError:
-            msg = 'include schema at (%s), failed' % url
+            msg = f'include schema at ({url}), failed'
             log.error('%s, %s', self.id, msg, exc_info=True)
             raise Exception(msg)
 
@@ -630,9 +598,8 @@ class Include(SchemaObject):
         if tns is None:
             tns = self.schema.tns[1]
             root.set(TNS, tns)
-        else:
-            if self.schema.tns[1] != tns:
-                raise Exception('%s mismatch' % TNS)
+        elif self.schema.tns[1] != tns:
+            raise Exception(f'{TNS} mismatch')
 
     def description(self):
         return ('location')
@@ -752,10 +719,7 @@ class Factory:
         @rtype: L{SchemaObject}
         """
         fn = cls.tags.get(root.name)
-        if fn is not None:
-            return fn(schema, root)
-        else:
-            return None
+        return fn(schema, root) if fn is not None else None
 
     @classmethod
     def build(cls, root, schema, filter=('*',)):

@@ -176,8 +176,8 @@ class FileCache(Cache):
         """
         if len(duration) == 1:
             arg = list(duration.items())[0]
-            if not arg[0] in self.units:
-                raise Exception('must be: %s' % str(self.units))
+            if arg[0] not in self.units:
+                raise Exception(f'must be: {str(self.units)}')
             self.duration = arg
         return self
 
@@ -294,7 +294,7 @@ class FileCache(Cache):
     def __fn(self, id):
         name = id
         suffix = self.fnsuffix()
-        fn = '%s-%s.%s' % (self.fnprefix, name, suffix)
+        fn = f'{self.fnprefix}-{name}.{suffix}'
         return os.path.join(self.location, fn)
 
     @staticmethod
@@ -370,10 +370,7 @@ class ObjectCache(FileCache):
     def get(self, id):
         try:
             with FileCache.getf(self, id) as fp:
-                if fp is None:
-                    return None
-                else:
-                    return pickle.load(fp)
+                return None if fp is None else pickle.load(fp)
         except:
             FileCache.purge(self, id)
 

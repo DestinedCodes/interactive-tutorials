@@ -36,10 +36,7 @@ class DefListProcessor(markdown.blockprocessors.BlockProcessor):
         m = self.RE.search(block)
         terms = [l.strip() for l in block[:m.start()].split('\n') if l.strip()]
         d, theRest = self.detab(block[m.end():])
-        if d:
-            d = '%s\n%s' % (m.group(2), d)
-        else:
-            d = m.group(2)
+        d = '%s\n%s' % (m.group(2), d) if d else m.group(2)
         #import ipdb; ipdb.set_trace()
         sibling = self.lastChild(parent)
         if not terms and sibling.tag == 'p':

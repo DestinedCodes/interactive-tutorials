@@ -35,23 +35,16 @@ class Document(Element):
             self.append(root)
 
     def root(self):
-        if len(self.children):
-            return self.children[0]
-        else:
-            return None
+        return self.children[0] if len(self.children) else None
 
     def str(self):
-        s = []
-        s.append(self.DECL)
-        s.append('\n')
+        s = [self.DECL, '\n']
         if self.root() is not None:
             s.append(self.root().str())
         return ''.join(s)
 
     def plain(self):
-        s = []
-        s.append(self.DECL)
-        s.append(self.root().plain())
+        s = [self.DECL, self.root().plain()]
         return ''.join(s)
 
     def __str__(self):

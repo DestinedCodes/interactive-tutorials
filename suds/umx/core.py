@@ -101,10 +101,7 @@ class Core:
         if content.node.isnil():
             return None
         if not len(node.children) and content.text is None:
-            if self.nillable(content):
-                return None
-            else:
-                return Text('', lang=lang)
+            return None if self.nillable(content) else Text('', lang=lang)
         if isinstance(content.text, basestring):
             return Text(content.text, lang=lang)
         else:
@@ -134,7 +131,7 @@ class Core:
         @type content: L{Content}
         """
         key = name
-        key = '_%s' % reserved.get(key, key)
+        key = f'_{reserved.get(key, key)}'
         setattr(content.data, key, value)
 
     def append_children(self, content):

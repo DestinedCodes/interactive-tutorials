@@ -449,15 +449,15 @@ for domain, v in list(DOMAIN_DATA.items()):
     v["share_logo"] = "/static/img/share-logos/" + v["namespace"] + ".png"
     v["favicon"] = "/static/img/favicons/" + v["namespace"] + ".ico"
     v["styled_domain"] = domain
-    v["sender"] = "%s <%s>" % (domain, v["contact_email"])
+    v["sender"] = f'{domain} <{v["contact_email"]}>'
 
     import os
     if not os.path.exists(v["logo"][1:]):
-        raise Exception("no logo for %s - %s" % (domain, v["logo"][1:]))
+        raise Exception(f'no logo for {domain} - {v["logo"][1:]}')
     if not os.path.exists(v["share_logo"][1:]):
-        raise Exception("no share logo for %s - %s" % (domain, v["share_logo"][1:]))
+        raise Exception(f'no share logo for {domain} - {v["share_logo"][1:]}')
     if not os.path.exists(v["favicon"][1:]):
-        raise Exception("no favicon for %s - %s" % (domain, v["favicon"][1:]))
+        raise Exception(f'no favicon for {domain} - {v["favicon"][1:]}')
 
 
 

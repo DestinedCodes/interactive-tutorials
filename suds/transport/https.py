@@ -66,7 +66,7 @@ class HttpAuthenticated(HttpTransport):
 
     def addcredentials(self, request):
         credentials = self.credentials()
-        if not (None in credentials):
+        if None not in credentials:
             u = credentials[0]
             p = credentials[1]
             self.pm.add_password(None, request.url, u, p)

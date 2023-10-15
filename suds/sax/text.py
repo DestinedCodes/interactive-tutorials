@@ -83,16 +83,13 @@ class Text(str):
     def __repr__(self):
         s = [self]
         if self.lang is not None:
-            s.append(' [%s]' % self.lang)
+            s.append(f' [{self.lang}]')
         if self.escaped:
             s.append(' <escaped>')
         return ''.join(s).__repr__()
 
     def __getstate__(self):
-        state = {}
-        for k in self.__slots__:
-            state[k] = getattr(self, k)
-        return state
+        return {k: getattr(self, k) for k in self.__slots__}
 
     def __setstate__(self, state):
         for k in self.__slots__:

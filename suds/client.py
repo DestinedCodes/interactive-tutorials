@@ -145,7 +145,7 @@ class Client(object):
             root.addPrefix(prefix, uri)
             return
         if mapped[1] != uri:
-            raise Exception('"%s" already mapped as "%s"' % (prefix, mapped))
+            raise Exception(f'"{prefix}" already mapped as "{mapped}"')
 
     def last_sent(self):
         """
@@ -187,34 +187,43 @@ class Client(object):
         return clone
 
     def __str__(self):
-        s = ['\n']
         build = suds.__build__.split()
-        s.append('Suds ( https://github.com/cackharot/suds-py3 )')
-        s.append('  version: %s' % suds.__version__)
-        s.append(' %s  build: %s' % (build[0], build[1]))
-        for sd in self.sd:
-            s.append('\n\n%s' % sd)
+        s = [
+            '\n',
+            *(
+                'Suds ( https://github.com/cackharot/suds-py3 )',
+                f'  version: {suds.__version__}',
+                f' {build[0]}  build: {build[1]}',
+            ),
+        ]
+        s.extend('\n\n%s' % sd for sd in self.sd)
         return ''.join(s)
 
     def __unicode__(self):
-        s = ['\n']
         build = suds.__build__.split()
-        s.append('Suds ( https://github.com/cackharot/suds-py3 )')
-        s.append('  version: %s' % suds.__version__)
-        s.append(' %s  build: %s' % (build[0], build[1]))
-        for sd in self.sd:
-            s.append('\n\n%s' % sd)
+        s = [
+            '\n',
+            *(
+                'Suds ( https://github.com/cackharot/suds-py3 )',
+                f'  version: {suds.__version__}',
+                f' {build[0]}  build: {build[1]}',
+            ),
+        ]
+        s.extend('\n\n%s' % sd for sd in self.sd)
         return ''.join(s)
 
     def html(self):
-        s = ['']
         build = suds.__build__.split()
-        s.append('<h1>Suds <small>(')
-        s.append('  version: %s' % suds.__version__)
-        s.append(' %s  build: %s' % (build[0], build[1]))
-        s.append(')</small></h1>')
-        for sd in self.sd:
-            s.append('<hr/>%s' % sd.html())
+        s = [
+            '',
+            *(
+                '<h1>Suds <small>(',
+                f'  version: {suds.__version__}',
+                f' {build[0]}  build: {build[1]}',
+                ')</small></h1>',
+            ),
+        ]
+        s.extend(f'<hr/>{sd.html()}' for sd in self.sd)
         return ''.join(s)
 
 
@@ -309,10 +318,7 @@ class ServiceSelector:
         @rtype: L{PortSelector}.
         """
         default = self.__ds()
-        if default is None:
-            port = self.__find(0)
-        else:
-            port = default
+        port = self.__find(0) if default is None else default
         return getattr(port, name)
 
     def __getitem__(self, name):
@@ -368,10 +374,7 @@ class ServiceSelector:
         @rtype: L{PortSelector}.
         """
         ds = self.__client.options.service
-        if ds is None:
-            return None
-        else:
-            return self.__find(ds)
+        return None if ds is None else self.__find(ds)
 
 
 class PortSelector:
@@ -413,10 +416,7 @@ class PortSelector:
         @rtype: L{MethodSelector}.
         """
         default = self.__dp()
-        if default is None:
-            m = self.__find(0)
-        else:
-            m = default
+        m = self.__find(0) if default is None else default
         return getattr(m, name)
 
     def __getitem__(self, name):
@@ -431,10 +431,7 @@ class PortSelector:
         @rtype: L{MethodSelector}.
         """
         default = self.__dp()
-        if default is None:
-            return self.__find(name)
-        else:
-            return default
+        return self.__find(name) if default is None else default
 
     def __find(self, name):
         """
@@ -446,7 +443,7 @@ class PortSelector:
         """
         port = None
         if not len(self.__ports):
-            raise Exception('No ports defined: %s' % self.__qn)
+            raise Exception(f'No ports defined: {self.__qn}')
         if isinstance(name, int):
             qn = '%s[%d]' % (self.__qn, name)
             try:
@@ -471,10 +468,7 @@ class PortSelector:
         @rtype: L{MethodSelector}.
         """
         dp = self.__client.options.port
-        if dp is None:
-            return None
-        else:
-            return self.__find(dp)
+        return None if dp is None else self.__find(dp)
 
 
 class MethodSelector:
@@ -550,13 +544,12 @@ class Method:
         """
         clientclass = self.clientclass(kwargs)
         client = clientclass(self.client, self.method)
-        if not self.faults():
-            try:
-                return client.invoke(args, kwargs)
-            except WebFault as e:
-                return (500, e)
-        else:
+        if self.faults():
             return client.invoke(args, kwargs)
+        try:
+            return client.invoke(args, kwargs)
+        except WebFault as e:
+            return (500, e)
 
     def faults(self):
         """ get faults option """
@@ -564,10 +557,7 @@ class Method:
 
     def clientclass(self, kwargs):
         """ get soap client class """
-        if SimClient.simulation(kwargs):
-            return SimClient
-        else:
-            return SoapClient
+        return SimClient if SimClient.simulation(kwargs) else SoapClient
 
 
 class SoapClient:
@@ -641,10 +631,7 @@ class SoapClient:
             self.last_sent(soapenv)
             plugins = PluginContainer(self.options.plugins)
             plugins.message.marshalled(envelope=soapenv.root())
-            if prettyxml:
-                soapenv = soapenv.str()
-            else:
-                soapenv = soapenv.plain()
+            soapenv = soapenv.str() if prettyxml else soapenv.plain()
             soapenv = soapenv.encode('utf-8')
             plugins.message.sending(envelope=soapenv)
             request = Request(location, soapenv)
@@ -652,10 +639,7 @@ class SoapClient:
             reply = transport.send(request)
             ctx = plugins.message.received(reply=reply.message)
             reply.message = ctx.reply
-            if retxml:
-                result = reply.message
-            else:
-                result = self.succeeded(binding, reply.message)
+            result = reply.message if retxml else self.succeeded(binding, reply.message)
         except TransportError as e:
             if e.httpcode in (202, 204):
                 result = None
@@ -699,10 +683,7 @@ class SoapClient:
             result = None
         ctx = plugins.message.unmarshalled(reply=result)
         result = ctx.reply
-        if self.options.faults:
-            return result
-        else:
-            return (200, result)
+        return result if self.options.faults else (200, result)
 
     def failed(self, binding, error):
         """
@@ -794,8 +775,8 @@ class SimClient(SoapClient):
 
     def __fault(self, reply):
         """ simulate the (fault) reply """
-        binding = self.method.binding.output
         if self.options.faults:
+            binding = self.method.binding.output
             r, p = binding.get_fault(reply)
             self.last_received(r)
             return (500, p)

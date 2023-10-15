@@ -560,10 +560,7 @@ class DocumentStore:
         @rtype: StringIO
         """
         protocol, location = self.split(url)
-        if protocol == self.protocol:
-            return self.find(location)
-        else:
-            return None
+        return self.find(location) if protocol == self.protocol else None
 
     def find(self, location):
         """
@@ -577,7 +574,7 @@ class DocumentStore:
             content = self.store[location]
             return StringIO(content)
         except:
-            reason = 'location "%s" not in document store' % location
+            reason = f'location "{location}" not in document store'
             raise Exception(reason)
 
     def split(self, url):
@@ -589,7 +586,4 @@ class DocumentStore:
         @rtype: tuple
         """
         parts = url.split('://', 1)
-        if len(parts) == 2:
-            return parts
-        else:
-            return (None, url)
+        return parts if len(parts) == 2 else (None, url)
